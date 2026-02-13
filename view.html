@@ -50,8 +50,10 @@
         return;
     }
 
-    // ── JSON 데이터 경로: view.html과 같은 레포의 data/projects.json ──
-    var jsonUrl = './data/projects.json';
+    // 현재 페이지 URL에서 절대 경로를 계산
+    var currentPath = window.location.href.split('?')[0]; // 쿼리스트링 제거
+    var basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+    var jsonUrl = basePath + 'data/projects.json';
 
     fetch(jsonUrl)
         .then(function(res) {
@@ -167,4 +169,5 @@
 })();
 </script>
 </body>
+
 </html>
