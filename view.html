@@ -118,14 +118,16 @@
                     name: '개발 MM', type: 'scatter', mode: 'lines',
                     stackgroup: 'one',
                     line: { color: 'rgb(55, 128, 191)' },
-                    fillcolor: 'rgba(55, 128, 191, 0.6)'
+                    fillcolor: 'rgba(55, 128, 191, 0.6)',
+                    hovertemplate: '%{x}<br>개발 MM: %{y:.1f}<extra></extra>'
                 };
                 var traceBiz = {
                     x: labels, y: bizData,
                     name: '사업 MM', type: 'scatter', mode: 'lines',
                     stackgroup: 'one',
                     line: { color: 'rgb(219, 64, 82)' },
-                    fillcolor: 'rgba(219, 64, 82, 0.6)'
+                    fillcolor: 'rgba(219, 64, 82, 0.6)',
+                    hovertemplate: '%{x}<br>사업 MM: %{y:.1f}<extra></extra>'
                 };
 
                 var lastLabel = labels[labels.length - 1] || launch;
