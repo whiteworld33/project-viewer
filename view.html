@@ -132,7 +132,14 @@
 
                 var layout = {
                     title: { text: projectName + ' — 월별 MM 현황', font: { size: 16 }, y: 0.98 },
-                    xaxis: { title: '' },
+                    xaxis: {
+                        title: '',
+                        tickangle: -90,
+                        tickformat: '%Y-%m',
+                        tickfont: { size: 10 },
+                        nticks: 40,
+                        ticklabeloverflow: 'allow'
+                    },
                     yaxis: { title: 'MM (Man-Month)' },
                     legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.12 },
                     margin: { t: 60, b: 60, l: 60, r: 20 },
