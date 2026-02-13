@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>프로젝트 뷰어</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 16px; background: #fff; color: #333; }
+
+        /* 표 스타일 */
+        .table-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; color: #333; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { padding: 8px 10px; background: #4a5568; color: #fff; text-align: right; white-space: nowrap; font-weight: 500; }
+        th:first-child { text-align: center; }
+        td { padding: 6px 10px; border-bottom: 1px solid #e8e8e8; text-align: right; white-space: nowrap; }
+        td:first-child { text-align: center; font-weight: 500; }
+        tr:nth-child(even) { background: #f8f9fa; }
+        tr:hover { background: #edf2f7; }
+        tr.is-forecast { color: #a0aec0; }
+        tr.is-current { background: #ebf8ff; font-weight: 600; }
+
+        /* 에러 */
+        .error { text-align: center; padding: 40px; color: #e53e3e; }
+        .error h2 { margin-bottom: 8px; }
+
+        /* 차트 컨테이너 */
+        #chart { width: 100%; }
+    </style>
+</head>
+<body>
+
+<div id="content">
+    <div class="error">
+        <h2>로딩 중...</h2>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    // ── URL 파라미터 읽기 ──
+    var params = new URLSearchParams(window.location.search);
+    var projectName = params.get('project');
+    var viewType = params.get('type') || 'table'; // table | chart
+
+    var contentDiv = document.getElementById('content');
+
+    if (!projectName) {
+        contentDiv.innerHTML = '<div class="error"><h2>⚠️ project 파라미터가 없습니다</h2><p>예: view.html?project=EL&type=table</p></div>';
+        return;
+    }
+
+    // ── localStorage에서 데이터 읽기 ──
+    var raw = localStorage.getItem('projectViewerData');
+    if (!raw) {
+        contentDiv.innerHTML = '<div class="error"><h2>⚠️ 저장된 데이터가 없습니다</h2><p>admin.html에서 먼저 데이터를 저장해 주세요.</p></div>';
+        return;
+    }
+
+    var allData;
+    try { allData = JSON.parse(raw); } catch(e) {
+        contentDiv.innerHTML = '<div class="error"><h2>⚠️ 데이터 파싱 오류</h2></div>';
+        return;
+    }
+
+    var project = allData[projectName];
+    if (!project) {
+        var available = Object.keys(allData).join(', ');
+        contentDiv.innerHTML = '<div class="error"><h2>⚠️ "' + projectName + '" 프로젝트를 찾을 수 없습니다</h2><p>저장된 프로젝트: ' + available + '</p></div>';
+        return;
+    }
+
+    var rows = project.rows;
+    var currentDate = project.current;
+    var kickoff = project.kickoff;
+    var launch = project.launch;
+
+    // ──────── TABLE ────────
+    if (viewType === 'table') {
+        var html = '<div class="table-title">📊 ' + projectName + ' — MM &amp; 누적개발비 (' + kickoff + ' ~ ' + launch + ')</div>';
+        html += '<table><thead><tr>'
+            + '<th>날짜</th><th>MM (개발)</th><th>MM (사업)</th><th>MM (합계)</th>'
+            + '<th>누적개발비-개발 (백만)</th><th>누적개발비-사업 (백만)</th><th>누적개발비-합계 (백만)</th><th>GI개발비 (백만)</th>'
+            + '</tr></thead><tbody>';
+
+        rows.forEach(function(r) {
+            var isForecast = r.date > currentDate;
+            var isCurrent = r.date === currentDate;
+            var cls = isCurrent ? ' class="is-current"' : (isForecast ? ' class="is-forecast"' : '');
+            html += '<tr' + cls + '>'
+                + '<td>' + r.date + '</td>'
+                + '<td>' + r.mmDev.toFixed(1) + '</td>'
+                + '<td>' + r.mmBiz.toFixed(1) + '</td>'
+                + '<td>' + r.mmTotal.toFixed(1) + '</td>'
+                + '<td>' + Math.round(r.costDev / 1000000).toLocaleString() + '</td>'
+                + '<td>' + Math.round(r.costBiz / 1000000).toLocaleString() + '</td>'
+                + '<td>' + Math.round(r.costTotal / 1000000).toLocaleString() + '</td>'
+                + '<td>' + Math.round(r.costGI / 1000000).toLocaleString() + '</td>'
+                + '</tr>';
+        });
+        html += '</tbody></table>';
+        contentDiv.innerHTML = html;
+    }
+
+    // ──────── CHART ────────
+    else if (viewType === 'chart') {
+        contentDiv.innerHTML = '<div id="chart"></div>';
+
+        var labels = rows.map(function(r) { return r.date; });
+        var devData = rows.map(function(r) { return r.mmDev; });
+        var bizData = rows.map(function(r) { return r.mmBiz; });
+
+        var traceDev = {
+            x: labels, y: devData,
+            name: '개발 MM', type: 'scatter', mode: 'lines',
+            stackgroup: 'one',
+            line: { color: 'rgb(55, 128, 191)' },
+            fillcolor: 'rgba(55, 128, 191, 0.6)'
+        };
+        var traceBiz = {
+            x: labels, y: bizData,
+            name: '사업 MM', type: 'scatter', mode: 'lines',
+            stackgroup: 'one',
+            line: { color: 'rgb(219, 64, 82)' },
+            fillcolor: 'rgba(219, 64, 82, 0.6)'
+        };
+
+        var lastLabel = labels[labels.length - 1] || launch;
+
+        var layout = {
+            title: { text: projectName + ' — 월별 MM 현황', font: { size: 16 } },
+            xaxis: { title: '월' },
+            yaxis: { title: 'MM (Man-Month)' },
+            margin: { t: 50, b: 50, l: 60, r: 20 },
+            shapes: [
+                {
+                    type: 'rect',
+                    x0: currentDate, x1: lastLabel,
+                    y0: 0, y1: 1, yref: 'paper',
+                    fillcolor: 'rgba(255, 255, 255, 0.45)',
+                    line: { width: 0 },
+                    layer: 'above'
+                },
+                {
+                    type: 'line',
+                    x0: currentDate, x1: currentDate,
+                    y0: 0, y1: 1, yref: 'paper',
+                    line: { color: 'rgba(0,0,0,0.5)', width: 2, dash: 'dash' },
+                    layer: 'above'
+                }
+            ],
+            annotations: [{
+                x: currentDate, y: 1.05, yref: 'paper',
+                text: '◀ 실적 | 예측 ▶',
+                showarrow: false,
+                font: { size: 11, color: 'rgba(0,0,0,0.6)' },
+                yanchor: 'bottom'
+            }]
+        };
+
+        Plotly.newPlot('chart', [traceDev, traceBiz], layout, { responsive: true });
+    }
+
+    else {
+        contentDiv.innerHTML = '<div class="error"><h2>⚠️ 알 수 없는 type: ' + viewType + '</h2><p>table 또는 chart를 사용하세요.</p></div>';
+    }
+});
+</script>
+</body>
+</html>
