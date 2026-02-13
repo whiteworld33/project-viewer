@@ -25,7 +25,10 @@
         .loader { border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; margin: 12px auto; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        #chart { width: 100%; }
+        html, body { height: 100%; overflow: hidden; }
+        #content { width: 100vw; height: 100vh; }
+        #content.table-mode { height: auto; overflow: auto; padding: 16px; }
+        #chart { width: 100%; height: 100%; }
     </style>
 </head>
 <body>
@@ -75,6 +78,7 @@
 
             // ──────── TABLE ────────
             if (viewType === 'table') {
+                contentDiv.classList.add('table-mode');
                 var html = '<div class="table-title">📊 ' + projectName + ' — MM &amp; 누적개발비 (' + kickoff + ' ~ ' + launch + ')</div>';
                 html += '<table><thead><tr>'
                     + '<th>날짜</th><th>MM (개발)</th><th>MM (사업)</th><th>MM (합계)</th>'
@@ -102,6 +106,7 @@
 
             // ──────── CHART ────────
             else if (viewType === 'chart') {
+                contentDiv.classList.remove('table-mode');
                 contentDiv.innerHTML = '<div id="chart"></div>';
 
                 var labels = rows.map(function(r) { return r.date; });
@@ -157,7 +162,12 @@
                     }]
                 };
 
-                Plotly.newPlot('chart', [traceDev, traceBiz], layout, { responsive: true });
+                var chartDiv = document.getElementById('chart');
+                Plotly.newPlot(chartDiv, [traceDev, traceBiz], layout, { responsive: true });
+                // iframe 리사이즈 시 차트 크기 자동 조절
+                window.addEventListener('resize', function() {
+                    Plotly.relayout(chartDiv, { width: window.innerWidth, height: window.innerHeight });
+                });
             }
 
             else {
