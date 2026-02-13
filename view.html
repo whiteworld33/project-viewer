@@ -50,8 +50,8 @@
         return;
     }
 
-    // 현재 페이지 URL에서 절대 경로를 계산
-    var currentPath = window.location.href.split('?')[0]; // 쿼리스트링 제거
+    // ── JSON 데이터 경로: 절대 URL로 계산 (노션 임베드 호환) ──
+    var currentPath = window.location.href.split('?')[0];
     var basePath = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
     var jsonUrl = basePath + 'data/projects.json';
 
@@ -126,10 +126,11 @@
                 var lastLabel = labels[labels.length - 1] || launch;
 
                 var layout = {
-                    title: { text: projectName + ' — 월별 MM 현황', font: { size: 16 } },
-                    xaxis: { title: '월' },
+                    title: { text: projectName + ' — 월별 MM 현황', font: { size: 16 }, y: 0.98 },
+                    xaxis: { title: '' },
                     yaxis: { title: 'MM (Man-Month)' },
-                    margin: { t: 50, b: 50, l: 60, r: 20 },
+                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.12 },
+                    margin: { t: 60, b: 60, l: 60, r: 20 },
                     shapes: [
                         {
                             type: 'rect',
@@ -148,7 +149,7 @@
                         }
                     ],
                     annotations: [{
-                        x: currentDate, y: 1.05, yref: 'paper',
+                        x: currentDate, y: 1.02, yref: 'paper',
                         text: '◀ 실적 | 예측 ▶',
                         showarrow: false,
                         font: { size: 11, color: 'rgba(0,0,0,0.6)' },
@@ -169,5 +170,4 @@
 })();
 </script>
 </body>
-
 </html>
