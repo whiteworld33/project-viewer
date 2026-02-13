@@ -14,12 +14,10 @@
         .section-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #eee; }
         .section-title .badge { font-size: 12px; background: #e0e0e0; color: #555; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 400; }
 
-        /* 파일 업로드 */
         .file-area { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .file-area input[type="file"] { font-size: 14px; }
         .file-area .status { font-size: 13px; color: #888; }
 
-        /* 프로젝트 목록 */
         #project-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 10px; }
         .project-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa; }
         .project-card.selected { border-color: #007bff; background: #f0f7ff; }
@@ -29,41 +27,41 @@
         .project-card .dates label { color: #666; }
         .project-card .dates input[type="month"] { font-size: 12px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; width: 120px; }
 
-        /* 버튼 */
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
         .btn { font-size: 15px; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
         .btn-primary { background: #007bff; color: #fff; }
         .btn-primary:hover { background: #0056b3; }
+        .btn-success { background: #28a745; color: #fff; }
+        .btn-success:hover { background: #218838; }
         .btn-secondary { background: #6c757d; color: #fff; }
         .btn-secondary:hover { background: #545b62; }
-        .btn-danger { background: #dc3545; color: #fff; }
-        .btn-danger:hover { background: #b02a37; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* URL 결과 */
         #url-output { margin-top: 20px; }
         .url-group { margin-bottom: 16px; }
         .url-group h4 { margin-bottom: 6px; color: #333; }
         .url-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
         .url-row code { flex: 1; background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-size: 13px; word-break: break-all; border: 1px solid #e0e0e0; }
-        .url-row .copy-btn { font-size: 12px; padding: 6px 12px; background: #28a745; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
-        .url-row .copy-btn:hover { background: #218838; }
+        .url-row .copy-btn { font-size: 12px; padding: 6px 12px; background: #17a2b8; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
+        .url-row .copy-btn:hover { background: #138496; }
 
-        /* 상태 메시지 */
         .msg { padding: 10px 16px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
         .msg-success { background: #d4edda; color: #155724; }
-        .msg-error { background: #f8d7da; color: #721c24; }
         .msg-info { background: #d1ecf1; color: #0c5460; }
+        .msg-warn { background: #fff3cd; color: #856404; }
 
-        /* 저장 현황 */
         #storage-info { font-size: 13px; color: #888; text-align: center; margin-top: 10px; }
+
+        .github-url-input { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .github-url-input label { font-weight: 500; font-size: 14px; white-space: nowrap; }
+        .github-url-input input { flex: 1; font-size: 14px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; min-width: 300px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>📊 프로젝트 데이터 관리자</h1>
-    <p class="subtitle">엑셀 → localStorage → view.html 임베드</p>
+    <p class="subtitle">엑셀 → projects.json 다운로드 → GitHub Pages → 노션 임베드</p>
 
     <!-- STEP 1: 파일 업로드 -->
     <div class="section">
@@ -86,12 +84,16 @@
         </div>
     </div>
 
-    <!-- STEP 3: 저장 -->
+    <!-- STEP 3: JSON 다운로드 & URL 생성 -->
     <div class="section">
-        <div class="section-title">3️⃣ 데이터 저장 및 URL 생성</div>
+        <div class="section-title">3️⃣ JSON 다운로드 및 임베드 URL 생성</div>
+        <div class="github-url-input">
+            <label>GitHub Pages 기본 URL:</label>
+            <input type="text" id="baseUrlInput" placeholder="https://계정명.github.io/레포명" value="">
+        </div>
         <div class="btn-group">
-            <button class="btn btn-primary" id="saveBtn" disabled>💾 선택한 프로젝트 데이터 저장</button>
-            <button class="btn btn-danger" id="clearBtn">🗑️ 저장 데이터 초기화</button>
+            <button class="btn btn-success" id="downloadBtn" disabled>📥 projects.json 다운로드</button>
+            <button class="btn btn-primary" id="generateUrlBtn" disabled>🔗 임베드 URL 생성</button>
         </div>
         <div id="save-msg"></div>
         <div id="storage-info"></div>
@@ -102,56 +104,51 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
 
-    // ── 엑셀 날짜 변환 ──
     function excelDateToYM(serial) {
         if (typeof serial !== 'number') return null;
         if (serial > 59) serial -= 1;
-        const d = new Date((serial - 25568) * 86400 * 1000);
-        const y = d.getFullYear();
-        const m = ('0' + (d.getMonth() + 1)).slice(-2);
-        return y + '-' + m;
+        var d = new Date((serial - 25568) * 86400 * 1000);
+        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
     }
 
-    let parsedProjects = {}; // { projectName: { rows: [...], rowIndex, colIndex } }
+    var parsedProjects = {};
+    var lastSaveData = null;
 
-    // ── STEP 1: 파일 업로드 시 자동 파싱 ──
+    // ── STEP 1: 파일 업로드 ──
     document.getElementById('fileInput').addEventListener('change', function() {
-        const file = this.files[0];
+        var file = this.files[0];
         if (!file) return;
         document.getElementById('file-status').textContent = '파싱 중...';
 
-        const reader = new FileReader();
+        var reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = '개발전략기획실';
-                const ws = workbook.Sheets[sheetName];
+                var data = new Uint8Array(e.target.result);
+                var workbook = XLSX.read(data, { type: 'array' });
+                var sheetName = '개발전략기획실';
+                var ws = workbook.Sheets[sheetName];
                 if (!ws) throw new Error("'" + sheetName + "' 시트를 찾을 수 없습니다.");
 
-                const sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+                var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
                 parsedProjects = {};
 
-                // 프로젝트 탐지: 프로젝트명 셀 → +5행부터 날짜(숫자)가 시작되는 셀
-                for (let i = 0; i < sheet.length; i++) {
-                    for (let j = 0; j < (sheet[i] || []).length; j++) {
-                        const cellVal = (sheet[i][j] || '').toString().trim();
+                for (var i = 0; i < sheet.length; i++) {
+                    for (var j = 0; j < (sheet[i] || []).length; j++) {
+                        var cellVal = (sheet[i][j] || '').toString().trim();
                         if (!cellVal || typeof sheet[i][j] === 'number') continue;
 
-                        // +5행 아래 첫 셀이 숫자(엑셀 날짜)인지 확인
-                        const dataRow = i + 5;
+                        var dataRow = i + 5;
                         if (dataRow >= sheet.length) continue;
-                        const checkVal = (sheet[dataRow] || [])[j];
+                        var checkVal = (sheet[dataRow] || [])[j];
                         if (typeof checkVal !== 'number' || checkVal < 30000 || checkVal > 60000) continue;
 
-                        // 유효 프로젝트로 판정
-                        const rows = [];
-                        for (let r = dataRow; r < sheet.length; r++) {
-                            const rv = (sheet[r] || [])[j];
+                        var rows = [];
+                        for (var r = dataRow; r < sheet.length; r++) {
+                            var rv = (sheet[r] || [])[j];
                             if (rv === null || typeof rv !== 'number') break;
-                            const ym = excelDateToYM(rv);
+                            var ym = excelDateToYM(rv);
                             if (!ym) break;
-                            const row = sheet[r] || [];
+                            var row = sheet[r] || [];
                             rows.push({
                                 date: ym,
                                 mmDev: row[j + 1] || 0,
@@ -173,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
 
-                const names = Object.keys(parsedProjects);
+                var names = Object.keys(parsedProjects);
                 document.getElementById('file-status').textContent = file.name + ' (' + names.length + '개 프로젝트 탐지)';
                 document.getElementById('project-count').textContent = names.length + '개 탐지';
                 renderProjectList(names);
@@ -188,17 +185,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── 프로젝트 목록 렌더링 ──
     function renderProjectList(names) {
-        const container = document.getElementById('project-list');
+        var container = document.getElementById('project-list');
         if (names.length === 0) {
             container.innerHTML = '<p style="color:#aaa;">탐지된 프로젝트가 없습니다.</p>';
             return;
         }
-
-        const now = new Date();
-        const currentYM = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+        var now = new Date();
+        var currentYM = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
 
         container.innerHTML = names.map(function(name) {
-            const p = parsedProjects[name];
+            var p = parsedProjects[name];
             return '<div class="project-card" data-name="' + name + '">'
                 + '<input type="checkbox" class="proj-check">'
                 + '<span class="name">' + name + '</span>'
@@ -209,59 +205,55 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '</div></div>';
         }).join('');
 
-        // 카드 클릭 시 체크박스 토글
         container.querySelectorAll('.project-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 if (e.target.tagName === 'INPUT') return;
-                const cb = card.querySelector('.proj-check');
+                var cb = card.querySelector('.proj-check');
                 cb.checked = !cb.checked;
                 card.classList.toggle('selected', cb.checked);
-                updateSaveBtn();
+                updateBtns();
             });
             card.querySelector('.proj-check').addEventListener('change', function() {
                 card.classList.toggle('selected', this.checked);
-                updateSaveBtn();
+                updateBtns();
             });
         });
 
         document.getElementById('selectAllBtn').disabled = false;
         document.getElementById('deselectAllBtn').disabled = false;
-        updateSaveBtn();
+        updateBtns();
     }
 
-    function updateSaveBtn() {
-        const checked = document.querySelectorAll('.proj-check:checked').length;
-        document.getElementById('saveBtn').disabled = (checked === 0);
+    function updateBtns() {
+        var checked = document.querySelectorAll('.proj-check:checked').length;
+        document.getElementById('downloadBtn').disabled = (checked === 0);
+        document.getElementById('generateUrlBtn').disabled = (checked === 0);
     }
 
-    // 전체 선택/해제
     document.getElementById('selectAllBtn').addEventListener('click', function() {
         document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = true; cb.closest('.project-card').classList.add('selected'); });
-        updateSaveBtn();
+        updateBtns();
     });
     document.getElementById('deselectAllBtn').addEventListener('click', function() {
         document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = false; cb.closest('.project-card').classList.remove('selected'); });
-        updateSaveBtn();
+        updateBtns();
     });
 
-    // ── STEP 3: 저장 ──
-    document.getElementById('saveBtn').addEventListener('click', function() {
-        const cards = document.querySelectorAll('.project-card');
-        const saveData = {};
-        const urlLines = [];
-
+    // ── 선택 데이터 수집 ──
+    function collectSelectedData() {
+        var cards = document.querySelectorAll('.project-card');
+        var saveData = {};
         cards.forEach(function(card) {
-            const cb = card.querySelector('.proj-check');
+            var cb = card.querySelector('.proj-check');
             if (!cb.checked) return;
-            const name = card.getAttribute('data-name');
-            const kickoff = card.querySelector('.dt-kickoff').value;
-            const current = card.querySelector('.dt-current').value;
-            const launch = card.querySelector('.dt-launch').value;
-            const proj = parsedProjects[name];
+            var name = card.getAttribute('data-name');
+            var kickoff = card.querySelector('.dt-kickoff').value;
+            var current = card.querySelector('.dt-current').value;
+            var launch = card.querySelector('.dt-launch').value;
+            var proj = parsedProjects[name];
             if (!proj) return;
 
-            // 기간 필터링
-            const filtered = proj.rows.filter(function(r) {
+            var filtered = proj.rows.filter(function(r) {
                 return r.date >= kickoff && r.date <= launch;
             });
 
@@ -271,66 +263,64 @@ document.addEventListener('DOMContentLoaded', function() {
                 launch: launch,
                 rows: filtered
             };
+        });
+        return saveData;
+    }
 
-            // URL 생성
-            const base = 'view.html';
-            const encName = encodeURIComponent(name);
-            urlLines.push({
-                name: name,
-                tableUrl: base + '?project=' + encName + '&type=table',
-                chartUrl: base + '?project=' + encName + '&type=chart'
-            });
+    // ── JSON 다운로드 ──
+    document.getElementById('downloadBtn').addEventListener('click', function() {
+        lastSaveData = collectSelectedData();
+        var jsonStr = JSON.stringify(lastSaveData, null, 2);
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'projects.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        var sizeKB = (blob.size / 1024).toFixed(1);
+        var cnt = Object.keys(lastSaveData).length;
+        document.getElementById('save-msg').innerHTML = '<div class="msg msg-success">✅ projects.json 다운로드 완료 (' + cnt + '개 프로젝트, ' + sizeKB + ' KB)</div>'
+            + '<div class="msg msg-warn" style="margin-top:8px;">📌 다운로드한 파일을 GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
+    });
+
+    // ── 임베드 URL 생성 ──
+    document.getElementById('generateUrlBtn').addEventListener('click', function() {
+        var baseUrl = document.getElementById('baseUrlInput').value.trim().replace(/\/+$/, '');
+        if (!baseUrl) {
+            alert('GitHub Pages 기본 URL을 입력해 주세요.\n예: https://계정명.github.io/레포명');
+            return;
+        }
+
+        var data = collectSelectedData();
+        var names = Object.keys(data);
+
+        var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 노션 임베드용 URL (' + names.length + '개)</h3>';
+        names.forEach(function(name) {
+            var enc = encodeURIComponent(name);
+            var tableUrl = baseUrl + '/view.html?project=' + enc + '&type=table';
+            var chartUrl = baseUrl + '/view.html?project=' + enc + '&type=chart';
+
+            urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">표</span><code>' + tableUrl + '</code><button class="copy-btn" data-url="' + tableUrl + '">복사</button></div>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">차트</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div></div>';
         });
 
-        localStorage.setItem('projectViewerData', JSON.stringify(saveData));
-
-        // 저장 크기 표시
-        const size = new Blob([JSON.stringify(saveData)]).size;
-        const sizeKB = (size / 1024).toFixed(1);
-        document.getElementById('storage-info').textContent = '저장 용량: ' + sizeKB + ' KB / 프로젝트 ' + Object.keys(saveData).length + '개';
-
-        // 성공 메시지
-        document.getElementById('save-msg').innerHTML = '<div class="msg msg-success">✅ ' + Object.keys(saveData).length + '개 프로젝트 데이터가 localStorage에 저장되었습니다.</div>';
-
-        // URL 출력
-        var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 생성된 View URL</h3>';
-        urlLines.forEach(function(u) {
-            urlHTML += '<div class="url-group"><h4>📌 ' + u.name + '</h4>'
-                + '<div class="url-row"><code>' + u.tableUrl + '</code><button class="copy-btn" data-url="' + u.tableUrl + '">복사</button></div>'
-                + '<div class="url-row"><code>' + u.chartUrl + '</code><button class="copy-btn" data-url="' + u.chartUrl + '">복사</button></div></div>';
-        });
         document.getElementById('url-output').innerHTML = urlHTML;
 
-        // 복사 버튼
         document.querySelectorAll('.copy-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                navigator.clipboard.writeText(this.getAttribute('data-url')).then(function() {
-                    btn.textContent = '✓ 복사됨';
-                    setTimeout(function() { btn.textContent = '복사'; }, 1500);
+                var self = this;
+                navigator.clipboard.writeText(self.getAttribute('data-url')).then(function() {
+                    self.textContent = '✓ 복사됨';
+                    setTimeout(function() { self.textContent = '복사'; }, 1500);
                 });
             });
         });
     });
-
-    // ── 데이터 초기화 ──
-    document.getElementById('clearBtn').addEventListener('click', function() {
-        if (!confirm('저장된 모든 프로젝트 데이터를 삭제하시겠습니까?')) return;
-        localStorage.removeItem('projectViewerData');
-        document.getElementById('save-msg').innerHTML = '<div class="msg msg-info">🗑️ 저장 데이터가 초기화되었습니다.</div>';
-        document.getElementById('url-output').innerHTML = '';
-        document.getElementById('storage-info').textContent = '';
-    });
-
-    // ── 페이지 로드 시 기존 저장 데이터 표시 ──
-    var existing = localStorage.getItem('projectViewerData');
-    if (existing) {
-        try {
-            var parsed = JSON.parse(existing);
-            var cnt = Object.keys(parsed).length;
-            var size = new Blob([existing]).size;
-            document.getElementById('storage-info').textContent = '현재 저장: ' + cnt + '개 프로젝트 (' + (size/1024).toFixed(1) + ' KB)';
-        } catch(e) {}
-    }
 });
 </script>
 </body>
