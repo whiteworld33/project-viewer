@@ -29,6 +29,11 @@
         #content { width: 100vw; height: 100vh; }
         #content.table-mode { height: auto; overflow: auto; padding: 16px; }
         #chart { width: 100%; height: 100%; }
+        /* Dashboard */
+        .dash-header { font-size: 17px; font-weight: 700; padding: 14px 16px 10px; color: #333; border-bottom: 2px solid #eee; background: #fafafa; }
+        .dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px; }
+        .dash-item { height: 360px; background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; overflow: hidden; }
+        .dash-item.full-width { grid-column: 1 / -1; height: 320px; }
     </style>
 </head>
 <body>
@@ -376,8 +381,140 @@
                     Plotly.relayout(chartDiv, { width: window.innerWidth, height: window.innerHeight });
                 });
             }
+            // ──────── DASHBOARD ────────
+            else if (viewType === 'dashboard') {
+                // 스크롤 허용
+                document.documentElement.style.overflow = 'auto';
+                document.documentElement.style.height = 'auto';
+                document.body.style.overflow = 'auto';
+                document.body.style.height = 'auto';
+                contentDiv.style.height = 'auto';
+                contentDiv.style.width = '100%';
+                contentDiv.innerHTML =
+                    '<div class="dash-header">📊 ' + projectName + ' — 개발 현황 대시보드</div>'
+                    + '<div class="dash-grid">'
+                    + '<div class="dash-item" id="d-mm"></div>'
+                    + '<div class="dash-item" id="d-cost"></div>'
+                    + '<div class="dash-item full-width" id="d-bar"></div>'
+                    + '<div class="dash-item" id="d-pie-cur"></div>'
+                    + '<div class="dash-item" id="d-pie-prev"></div>'
+                    + '</div>';
+                var labels = rows.map(function(r) { return r.date; });
+                var lastLabel = labels[labels.length - 1] || launch;
+                var shapeRect = { type:'rect', x0:currentDate, x1:lastLabel, y0:0, y1:1, yref:'paper', fillcolor:'rgba(255,255,255,0.45)', line:{width:0}, layer:'above' };
+                var shapeLine = { type:'line', x0:currentDate, x1:currentDate, y0:0, y1:1, yref:'paper', line:{color:'rgba(0,0,0,0.5)',width:2,dash:'dash'}, layer:'above' };
+                var annotCur  = { x:currentDate, y:1.02, yref:'paper', text:'◀ 실적 | 예측 ▶', showarrow:false, font:{size:10,color:'rgba(0,0,0,0.6)'}, yanchor:'bottom' };
+                var commonCfg = { responsive: true };
+                // ── MM 차트 ──
+                Plotly.newPlot('d-mm', [
+                    { x:labels, y:rows.map(function(r){return r.mmDev;}), name:'개발 MM', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(55,128,191)'}, fillcolor:'rgba(55,128,191,0.6)', hovertemplate:'%{x}<br>개발 MM: %{y:.1f}<extra></extra>' },
+                    { x:labels, y:rows.map(function(r){return r.mmBiz;}), name:'사업 MM', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(219,64,82)'}, fillcolor:'rgba(219,64,82,0.6)', hovertemplate:'%{x}<br>사업 MM: %{y:.1f}<extra></extra>' }
+                ], {
+                    title: { text:'월별 MM 현황', font:{size:14}, y:0.97 },
+                    xaxis: { tickangle:-45, tickformat:'%Y-%m', tickfont:{size:9}, nticks:20 },
+                    yaxis: { title:'MM' },
+                    legend: { orientation:'h', x:0.5, xanchor:'center', y:-0.28, yanchor:'top', traceorder:'normal' },
+                    margin: { t:48, b:75, l:55, r:10 },
+                    shapes: [shapeRect, shapeLine], annotations: [annotCur],
+                    paper_bgcolor:'#fff', plot_bgcolor:'#fff'
+                }, commonCfg);
+                // ── 누적 개발비 차트 ──
+                Plotly.newPlot('d-cost', [
+                    { x:labels, y:rows.map(function(r){return r.costDev/1000000;}), name:'개발비', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(55,128,191)'}, fillcolor:'rgba(55,128,191,0.6)', hovertemplate:'%{x}<br>개발비: %{y:,.0f} 백만원<extra></extra>' },
+                    { x:labels, y:rows.map(function(r){return r.costBiz/1000000;}), name:'사업비', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(219,64,82)'}, fillcolor:'rgba(219,64,82,0.6)', hovertemplate:'%{x}<br>사업비: %{y:,.0f} 백만원<extra></extra>' }
+                ], {
+                    title: { text:'누적 개발비 현황', font:{size:14}, y:0.97 },
+                    xaxis: { tickangle:-45, tickformat:'%Y-%m', tickfont:{size:9}, nticks:20 },
+                    yaxis: { title:'백만원' },
+                    legend: { orientation:'h', x:0.5, xanchor:'center', y:-0.28, yanchor:'top', traceorder:'normal' },
+                    margin: { t:48, b:75, l:65, r:10 },
+                    shapes: [shapeRect, shapeLine], annotations: [annotCur],
+                    paper_bgcolor:'#fff', plot_bgcolor:'#fff'
+                }, commonCfg);
+                // ── 월별 막대 차트 ──
+                (function() {
+                    function subM(ym, n) {
+                        var p=ym.split('-'); var y=parseInt(p[0]), mo=parseInt(p[1])-1-n;
+                        while(mo<0){mo+=12;y--;} return y+'-'+('0'+(mo+1)).slice(-2);
+                    }
+                    var fromDate = subM(currentDate, 5);
+                    var barRows = rows.filter(function(r){return r.date>=fromDate && r.date<=currentDate;});
+                    if (!barRows.length || !barRows[0].costBreakdown) {
+                        document.getElementById('d-bar').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#e53e3e;font-size:13px;">⚠️ 항목별 비용 데이터 없음 — 비용 시트명 입력 후 JSON 재생성 필요</div>';
+                        return;
+                    }
+                    var bLabels = barRows.map(function(r){return r.date;});
+                    var K = 1000;
+                    var cats = [
+                        {key:'labor',        name:'인건비',     color:'rgb(55,128,191)'},
+                        {key:'marketing',    name:'마케팅비',   color:'rgb(243,156,18)'},
+                        {key:'outsourcing',  name:'외주비',     color:'rgb(39,174,96)'},
+                        {key:'depreciation', name:'감가상각비', color:'rgb(142,68,173)'},
+                        {key:'server',       name:'서버비',     color:'rgb(22,160,133)'},
+                        {key:'other',        name:'기타 운영비',color:'rgb(127,140,141)'}
+                    ];
+                    var bTraces = cats.map(function(cat) {
+                        var yv = barRows.map(function(r){return (r.costBreakdown[cat.key]||0)/K;});
+                        return { x:bLabels, y:yv, text:yv.map(function(v){return v>0?Math.round(v).toLocaleString():''}), textposition:'inside', insidetextanchor:'middle', textfont:{size:8,color:'#fff'}, name:cat.name, type:'bar', marker:{color:cat.color}, hovertemplate:'%{x}<br>'+cat.name+': %{y:,.0f} 천원<extra></extra>' };
+                    });
+                    Plotly.newPlot('d-bar', bTraces, {
+                        title: { text:'월별 개발비 현황 (단위:천원)', font:{size:14}, y:0.97 },
+                        barmode:'stack',
+                        xaxis: { tickangle:-30, tickfont:{size:10} },
+                        yaxis: { title:'천원' },
+                        bargap: 0.5,
+                        legend: { orientation:'h', x:0.5, xanchor:'center', y:-0.18, yanchor:'top', traceorder:'normal' },
+                        margin: { t:48, b:65, l:70, r:10 },
+                        paper_bgcolor:'#fff', plot_bgcolor:'#fff'
+                    }, commonCfg);
+                })();
+                // ── 파이 차트 (이번달 / 지난달) ──
+                (function() {
+                    function subOneM(ym) {
+                        var p=ym.split('-'); var y=parseInt(p[0]),mo=parseInt(p[1])-2;
+                        if(mo<0){mo=11;y--;} return y+'-'+('0'+(mo+1)).slice(-2);
+                    }
+                    var pieCats = [
+                        {key:'labor',        name:'인건비',     color:'rgb(55,128,191)'},
+                        {key:'marketing',    name:'마케팅비',   color:'rgb(243,156,18)'},
+                        {key:'outsourcing',  name:'외주비',     color:'rgb(39,174,96)'},
+                        {key:'depreciation', name:'감가상각비', color:'rgb(142,68,173)'},
+                        {key:'server',       name:'서버비',     color:'rgb(22,160,133)'},
+                        {key:'other',        name:'기타 운영비',color:'rgb(127,140,141)'}
+                    ];
+                    var pieLabels = pieCats.map(function(c){return c.name;});
+                    var pieColors = pieCats.map(function(c){return c.color;});
+                    var K = 1000;
+                    function renderPie(cId, targetDate) {
+                        var tRow = null;
+                        for(var ri=0;ri<rows.length;ri++){if(rows[ri].date===targetDate){tRow=rows[ri];break;}}
+                        if(!tRow || !tRow.costBreakdown) {
+                            document.getElementById(cId).innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#e53e3e;font-size:13px;">⚠️ '+targetDate+' 데이터 없음</div>';
+                            return;
+                        }
+                        var bd=tRow.costBreakdown;
+                        var tp=targetDate.split('-'); var yy=tp[0].slice(2); var mm=parseInt(tp[1]);
+                        Plotly.newPlot(cId, [{
+                            labels: pieLabels,
+                            values: pieCats.map(function(c){return (bd[c.key]||0)/K;}),
+                            type:'pie', marker:{colors:pieColors},
+                            textinfo:'percent', textposition:'inside',
+                            texttemplate:'%{percent:.1%}',
+                            hovertemplate:'%{label}<br>%{value:,.0f} 천원<extra></extra>',
+                            insidetextorientation:'horizontal'
+                        }], {
+                            title: { text:yy+'년 '+mm+'월 개발비 항목별 비중', font:{size:14}, y:0.97 },
+                            legend: { orientation:'h', x:0.5, xanchor:'center', y:-0.05, yanchor:'top', traceorder:'normal' },
+                            margin: { t:48, b:60, l:10, r:10 },
+                            paper_bgcolor:'#ffffff', plot_bgcolor:'#ffffff'
+                        }, commonCfg);
+                    }
+                    renderPie('d-pie-cur',  currentDate);
+                    renderPie('d-pie-prev', subOneM(currentDate));
+                })();
+            }
             else {
-                contentDiv.innerHTML = '<div class="error"><h2>⚠️ 알 수 없는 type: ' + viewType + '</h2><p>table, chart, cost, bar, 또는 pie를 사용하세요.</p></div>';
+                contentDiv.innerHTML = '<div class="error"><h2>⚠️ 알 수 없는 type: ' + viewType + '</h2><p>table, chart, cost, bar, pie, 또는 dashboard를 사용하세요.</p></div>';
             }
         })
         .catch(function(err) {
