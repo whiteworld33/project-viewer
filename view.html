@@ -277,12 +277,17 @@
                     { key: 'other',        name: '기타 운영비',color: 'rgb(127,140,141)' }
                 ];
                 var barTraces = categories.map(function(cat) {
+                    var yVals = barRows.map(function(r) {
+                        var bd = r.costBreakdown || {};
+                        return (bd[cat.key] || 0) / K;
+                    });
                     return {
                         x: bLabels,
-                        y: barRows.map(function(r) {
-                            var bd = r.costBreakdown || {};
-                            return (bd[cat.key] || 0) / K;
-                        }),
+                        y: yVals,
+                        text: yVals.map(function(v) { return v > 0 ? v.toLocaleString() : ''; }),
+                        textposition: 'inside',
+                        insidetextanchor: 'middle',
+                        textfont: { size: 9, color: '#fff' },
                         name: cat.name,
                         type: 'bar',
                         marker: { color: cat.color },
@@ -299,6 +304,7 @@
                         ticklabeloverflow: 'allow'
                     },
                     yaxis: { title: '개발비 (천원)' },
+                    bargap: 0.5,
                     legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.2, yanchor: 'top' },
                     margin: { t: 60, b: 80, l: 80, r: 20 }
                 };
