@@ -310,12 +310,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
 
+            // 비용 시트 사용 시: 월별 값을 누적합으로 변환
+            var cumCostDev = 0;
             var filtered = proj.rows
                 .filter(function(r) { return r.date >= kickoff && r.date <= launch; })
                 .map(function(r) {
-                    var costDev = (costDevMap && costDevMap[r.date] !== undefined)
-                        ? costDevMap[r.date]
-                        : r.costDev;
+                    var costDev;
+                    if (costDevMap) {
+                        // 비용 시트 지정됨: 월별 값을 누적
+                        var monthly = (costDevMap[r.date] !== undefined) ? costDevMap[r.date] : 0;
+                        cumCostDev += monthly;
+                        costDev = cumCostDev;
+                    } else {
+                        // 비용 시트 미지정: 기존 시트 값 그대로 (이미 누적값)
+                        costDev = r.costDev;
+                    }
                     return {
                         date:      r.date,
                         mmDev:     r.mmDev,
@@ -324,7 +333,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         costDev:   costDev,
                         costBiz:   r.costBiz,
                         costTotal: r.costTotal,
-                        costGI:    costDev + r.costBiz  // costDev + costBiz 계산값
+                        costGI:    costDev + r.costBiz  // 누적 costDev + costBiz
                     };
                 });
 
