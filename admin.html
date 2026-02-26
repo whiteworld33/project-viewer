@@ -9,7 +9,7 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f4f4f9; color: #333; }
         h1 { text-align: center; margin-bottom: 8px; }
         .subtitle { text-align: center; color: #888; margin-bottom: 24px; font-size: 14px; }
-        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 1000px; margin: 0 auto; }
+        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 1100px; margin: 0 auto; }
         .section { margin-bottom: 24px; }
         .section-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #eee; }
         .section-title .badge { font-size: 12px; background: #e0e0e0; color: #555; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 400; }
@@ -18,14 +18,18 @@
         .file-area input[type="file"] { font-size: 14px; }
         .file-area .status { font-size: 13px; color: #888; }
 
-        #project-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(440px, 1fr)); gap: 10px; }
-        .project-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa; }
+        #project-list { display: flex; flex-direction: column; gap: 10px; }
+        .project-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa; flex-wrap: wrap; }
         .project-card.selected { border-color: #007bff; background: #f0f7ff; }
         .project-card input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; }
-        .project-card .name { font-weight: 500; min-width: 160px; font-size: 14px; }
-        .project-card .dates { display: flex; gap: 6px; font-size: 12px; }
+        .project-card .name { font-weight: 500; min-width: 150px; font-size: 14px; }
+        .project-card .dates { display: flex; gap: 6px; font-size: 12px; flex-wrap: wrap; align-items: center; }
         .project-card .dates label { color: #666; }
         .project-card .dates input[type="month"] { font-size: 12px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; width: 120px; }
+        .project-card .sheet-wrap { display: flex; align-items: center; gap: 4px; font-size: 12px; }
+        .project-card .sheet-wrap label { color: #666; white-space: nowrap; }
+        .project-card .sheet-wrap input[type="text"] { font-size: 12px; padding: 2px 6px; border: 1px solid #ccc; border-radius: 3px; width: 160px; background: #fffbe6; }
+        .sheet-hint { font-size: 11px; color: #aaa; margin-top: 2px; }
 
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
         .btn { font-size: 15px; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
@@ -49,6 +53,7 @@
         .msg-success { background: #d4edda; color: #155724; }
         .msg-info { background: #d1ecf1; color: #0c5460; }
         .msg-warn { background: #fff3cd; color: #856404; }
+        .msg-error { background: #f8d7da; color: #721c24; }
 
         #storage-info { font-size: 13px; color: #888; text-align: center; margin-top: 10px; }
 
@@ -75,6 +80,7 @@
     <!-- STEP 2: 프로젝트 선택 -->
     <div class="section">
         <div class="section-title">2️⃣ 프로젝트 선택 및 기간 설정 <span class="badge" id="project-count">0개 탐지</span></div>
+        <p style="font-size:12px; color:#888; margin-bottom:8px;">💡 <strong>비용 시트명</strong>: costDev 데이터를 가져올 시트명을 입력하세요. 비워두면 기존 시트 값을 사용합니다.</p>
         <div id="project-list">
             <p style="color:#aaa; font-size:14px;">엑셀 파일을 업로드하면 프로젝트 목록이 표시됩니다.</p>
         </div>
@@ -112,6 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     var parsedProjects = {};
+    var workbook = null; // 전역 workbook 참조 (비용 시트 파싱용)
     var lastSaveData = null;
 
     // ── STEP 1: 파일 업로드 ──
@@ -124,7 +131,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = function(e) {
             try {
                 var data = new Uint8Array(e.target.result);
-                var workbook = XLSX.read(data, { type: 'array' });
+                workbook = XLSX.read(data, { type: 'array' }); // 전역 저장
                 var sheetName = '개발전략기획실';
                 var ws = workbook.Sheets[sheetName];
                 if (!ws) throw new Error("'" + sheetName + "' 시트를 찾을 수 없습니다.");
@@ -151,13 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
                             var row = sheet[r] || [];
                             rows.push({
                                 date: ym,
-                                mmDev: row[j + 1] || 0,
-                                mmBiz: row[j + 2] || 0,
-                                mmTotal: row[j + 3] || 0,
-                                costDev: row[j + 4] || 0,
-                                costBiz: row[j + 5] || 0,
-                                costTotal: row[j + 6] || 0,
-                                costGI: row[j + 7] || 0
+                                mmDev:    row[j + 1] || 0,
+                                mmBiz:    row[j + 2] || 0,
+                                mmTotal:  row[j + 3] || 0,
+                                costDev:  row[j + 4] || 0,
+                                costBiz:  row[j + 5] || 0,
+                                costTotal: row[j + 6] || 0
+                                // costGI는 다운로드 시 costDev+costBiz로 계산
                             });
                         }
                         if (rows.length > 0) {
@@ -202,7 +209,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<div><label>킥오프</label><input type="month" class="dt-kickoff" value="' + p.firstDate + '"></div>'
                 + '<div><label>기준월</label><input type="month" class="dt-current" value="' + currentYM + '"></div>'
                 + '<div><label>런칭</label><input type="month" class="dt-launch" value="' + p.lastDate + '"></div>'
-                + '</div></div>';
+                + '</div>'
+                + '<div class="sheet-wrap">'
+                + '<label>비용 시트명</label>'
+                + '<input type="text" class="dt-sheet" placeholder="시트명 입력">'
+                + '</div>'
+                + '</div>';
         }).join('');
 
         container.querySelectorAll('.project-card').forEach(function(card) {
@@ -239,37 +251,98 @@ document.addEventListener('DOMContentLoaded', function() {
         updateBtns();
     });
 
+    // ── costDev 시트 파싱 ──
+    // 지정 시트의 2행(index 1)에서 날짜 스캔 → 킥오프~런칭 범위 → 38행(index 37) 값 수집
+    function getCostDevMap(sheetName, kickoff, launch) {
+        if (!sheetName || !workbook) return null;
+        var ws = workbook.Sheets[sheetName];
+        if (!ws) return null;
+
+        var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+        if (sheet.length < 38) return null;
+
+        var row2  = sheet[1]  || []; // 2행: 날짜 헤더
+        var row38 = sheet[37] || []; // 38행: costDev 데이터
+
+        var map = {};
+        for (var c = 0; c < row2.length; c++) {
+            var cell = row2[c];
+            if (cell === null || cell === undefined) continue;
+            var ym = null;
+            if (typeof cell === 'number' && cell > 30000 && cell < 60000) {
+                ym = excelDateToYM(cell);
+            } else if (typeof cell === 'string') {
+                // "YYYY-MM" 또는 "YYYY/MM" 형태 대응
+                var m = cell.match(/(\d{4})[\-\/](\d{1,2})/);
+                if (m) ym = m[1] + '-' + ('0' + m[2]).slice(-2);
+            }
+            if (!ym) continue;
+            if (ym >= kickoff && ym <= launch) {
+                map[ym] = (row38[c] !== null && row38[c] !== undefined) ? row38[c] : 0;
+            }
+        }
+        return map;
+    }
+
     // ── 선택 데이터 수집 ──
     function collectSelectedData() {
         var cards = document.querySelectorAll('.project-card');
         var saveData = {};
+        var warnings = [];
+
         cards.forEach(function(card) {
             var cb = card.querySelector('.proj-check');
             if (!cb.checked) return;
-            var name = card.getAttribute('data-name');
-            var kickoff = card.querySelector('.dt-kickoff').value;
-            var current = card.querySelector('.dt-current').value;
-            var launch = card.querySelector('.dt-launch').value;
-            var proj = parsedProjects[name];
+            var name      = card.getAttribute('data-name');
+            var kickoff   = card.querySelector('.dt-kickoff').value;
+            var current   = card.querySelector('.dt-current').value;
+            var launch    = card.querySelector('.dt-launch').value;
+            var sheetName = card.querySelector('.dt-sheet').value.trim();
+            var proj      = parsedProjects[name];
             if (!proj) return;
 
-            var filtered = proj.rows.filter(function(r) {
-                return r.date >= kickoff && r.date <= launch;
-            });
+            // costDev 맵 가져오기 (시트명 있을 때만)
+            var costDevMap = null;
+            if (sheetName) {
+                costDevMap = getCostDevMap(sheetName, kickoff, launch);
+                if (!costDevMap) {
+                    warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다. 기존 costDev 값을 사용합니다.');
+                }
+            }
+
+            var filtered = proj.rows
+                .filter(function(r) { return r.date >= kickoff && r.date <= launch; })
+                .map(function(r) {
+                    var costDev = (costDevMap && costDevMap[r.date] !== undefined)
+                        ? costDevMap[r.date]
+                        : r.costDev;
+                    return {
+                        date:      r.date,
+                        mmDev:     r.mmDev,
+                        mmBiz:     r.mmBiz,
+                        mmTotal:   r.mmTotal,
+                        costDev:   costDev,
+                        costBiz:   r.costBiz,
+                        costTotal: r.costTotal,
+                        costGI:    costDev + r.costBiz  // costDev + costBiz 계산값
+                    };
+                });
 
             saveData[name] = {
                 kickoff: kickoff,
                 current: current,
-                launch: launch,
-                rows: filtered
+                launch:  launch,
+                rows:    filtered
             };
         });
-        return saveData;
+        return { data: saveData, warnings: warnings };
     }
 
     // ── JSON 다운로드 ──
     document.getElementById('downloadBtn').addEventListener('click', function() {
-        lastSaveData = collectSelectedData();
+        var result = collectSelectedData();
+        lastSaveData = result.data;
+
         var jsonStr = JSON.stringify(lastSaveData, null, 2);
         var blob = new Blob([jsonStr], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
@@ -283,8 +356,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
         var sizeKB = (blob.size / 1024).toFixed(1);
         var cnt = Object.keys(lastSaveData).length;
-        document.getElementById('save-msg').innerHTML = '<div class="msg msg-success">✅ projects.json 다운로드 완료 (' + cnt + '개 프로젝트, ' + sizeKB + ' KB)</div>'
+        var msgHtml = '<div class="msg msg-success">✅ projects.json 다운로드 완료 (' + cnt + '개 프로젝트, ' + sizeKB + ' KB)</div>'
             + '<div class="msg msg-warn" style="margin-top:8px;">📌 다운로드한 파일을 GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
+        if (result.warnings.length > 0) {
+            msgHtml += '<div class="msg msg-error" style="margin-top:8px;">' + result.warnings.join('<br>') + '</div>';
+        }
+        document.getElementById('save-msg').innerHTML = msgHtml;
     });
 
     // ── 임베드 URL 생성 ──
@@ -295,8 +372,9 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        var data = collectSelectedData();
-        var names = Object.keys(data);
+        var result = collectSelectedData();
+        var data   = result.data;
+        var names  = Object.keys(data);
 
         var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 노션 임베드용 URL (' + names.length + '개)</h3>';
         names.forEach(function(name) {
