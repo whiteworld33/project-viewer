@@ -444,7 +444,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">막대</span><code>' + barUrl + '</code><button class="copy-btn" data-url="' + barUrl + '">복사</button></div>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(기준)</span><code>' + pieUrl + '</code><button class="copy-btn" data-url="' + pieUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(전달)</span><code>' + pieUrlPrev + '</code><button class="copy-btn" data-url="' + pieUrlPrev + '">복사</button></div></div>';
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(전달)</span><code>' + pieUrlPrev + '</code><button class="copy-btn" data-url="' + pieUrlPrev + '">복사</button></div>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">대시보드</span><code>' + (baseUrl + '/view.html?project=' + enc + '&type=dashboard') + '</code><button class="copy-btn" data-url="' + (baseUrl + '/view.html?project=' + enc + '&type=dashboard') + '">복사</button></div></div>';
         });
 
         document.getElementById('url-output').innerHTML = urlHTML;
