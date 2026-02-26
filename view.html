@@ -305,7 +305,7 @@
                     },
                     yaxis: { title: '개발비 (천원)' },
                     bargap: 0.5,
-                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.2, yanchor: 'top' },
+                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.2, yanchor: 'top', traceorder: 'normal' },
                     margin: { t: 60, b: 80, l: 80, r: 20 }
                 };
                 var chartDiv = document.getElementById('chart');
@@ -357,15 +357,18 @@
                     values: pieValues,
                     type: 'pie',
                     marker: { colors: pieColors },
-                    textinfo: 'label+percent',
-                    texttemplate: '%{label}<br>%{percent:.1%}',
+                    textinfo: 'percent',
+                    textposition: 'inside',
+                    texttemplate: '%{percent:.1%}',
                     hovertemplate: '%{label}<br>%{value:,.0f} 천원<extra></extra>',
-                    insidetextorientation: 'auto'
+                    insidetextorientation: 'horizontal'
                 };
                 var pieLayout = {
                     title: { text: titleDate + ' ' + projectName + ' 개발비 항목별 비중 (%)', font: { size: 15 }, y: 0.98 },
-                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.05, yanchor: 'top' },
-                    margin: { t: 60, b: 80, l: 20, r: 20 }
+                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.05, yanchor: 'top', traceorder: 'normal' },
+                    margin: { t: 60, b: 80, l: 20, r: 20 },
+                    paper_bgcolor: '#ffffff',
+                    plot_bgcolor: '#ffffff'
                 };
                 var chartDiv = document.getElementById('chart');
                 Plotly.newPlot(chartDiv, [pieTrace], pieLayout, { responsive: true });
