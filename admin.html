@@ -434,13 +434,17 @@ document.addEventListener('DOMContentLoaded', function() {
             var tableUrl = baseUrl + '/view.html?project=' + enc + '&type=table';
             var chartUrl = baseUrl + '/view.html?project=' + enc + '&type=chart';
 
-            var costUrl = baseUrl + '/view.html?project=' + enc + '&type=cost';
-            var barUrl  = baseUrl + '/view.html?project=' + enc + '&type=bar';
+            var costUrl    = baseUrl + '/view.html?project=' + enc + '&type=cost';
+            var barUrl     = baseUrl + '/view.html?project=' + enc + '&type=bar';
+            var pieUrl     = baseUrl + '/view.html?project=' + enc + '&type=pie';
+            var pieUrlPrev = baseUrl + '/view.html?project=' + enc + '&type=pie&month=prev';
             urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">표</span><code>' + tableUrl + '</code><button class="copy-btn" data-url="' + tableUrl + '">복사</button></div>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">MM</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">막대</span><code>' + barUrl + '</code><button class="copy-btn" data-url="' + barUrl + '">복사</button></div></div>';
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">막대</span><code>' + barUrl + '</code><button class="copy-btn" data-url="' + barUrl + '">복사</button></div>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(기준)</span><code>' + pieUrl + '</code><button class="copy-btn" data-url="' + pieUrl + '">복사</button></div>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(전달)</span><code>' + pieUrlPrev + '</code><button class="copy-btn" data-url="' + pieUrlPrev + '">복사</button></div></div>';
         });
 
         document.getElementById('url-output').innerHTML = urlHTML;
