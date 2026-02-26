@@ -391,9 +391,11 @@ document.addEventListener('DOMContentLoaded', function() {
             var tableUrl = baseUrl + '/view.html?project=' + enc + '&type=table';
             var chartUrl = baseUrl + '/view.html?project=' + enc + '&type=chart';
 
+            var costUrl = baseUrl + '/view.html?project=' + enc + '&type=cost';
             urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">표</span><code>' + tableUrl + '</code><button class="copy-btn" data-url="' + tableUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">차트</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div></div>';
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">MM</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div></div>';
         });
 
         document.getElementById('url-output').innerHTML = urlHTML;
