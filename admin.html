@@ -205,6 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return '<div class="project-card" data-name="' + name + '">'
                 + '<input type="checkbox" class="proj-check">'
                 + '<span class="name">' + name + '</span>'
+                + '<a class="gh-link" href="#" target="_blank" style="font-size:12px;color:#007bff;text-decoration:none;margin-left:6px;display:none;">🔗 보기</a>'
                 + '<div class="dates">'
                 + '<div><label>킥오프</label><input type="month" class="dt-kickoff" value="' + p.firstDate + '"></div>'
                 + '<div><label>기준월</label><input type="month" class="dt-current" value="' + currentYM + '"></div>'
@@ -234,6 +235,7 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('selectAllBtn').disabled = false;
         document.getElementById('deselectAllBtn').disabled = false;
         updateBtns();
+        updateProjectLinks();
     }
 
     function updateBtns() {
@@ -242,6 +244,23 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('generateUrlBtn').disabled = (checked === 0);
     }
 
+    function updateProjectLinks() {
+        var base = document.getElementById('baseUrlInput').value.trim().replace(/\/+$/, '');
+        document.querySelectorAll('.project-card').forEach(function(card) {
+            var name = card.getAttribute('data-name');
+            var link = card.querySelector('.gh-link');
+            if (!link) return;
+            if (base && name) {
+                var url = base + '/view.html?project=' + encodeURIComponent(name) + '&type=dashboard';
+                link.href = url;
+                link.style.display = 'inline';
+            } else {
+                link.href = '#';
+                link.style.display = 'none';
+            }
+        });
+    }
+    document.getElementById('baseUrlInput').addEventListener('input', updateProjectLinks);
     document.getElementById('selectAllBtn').addEventListener('click', function() {
         document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = true; cb.closest('.project-card').classList.add('selected'); });
         updateBtns();
