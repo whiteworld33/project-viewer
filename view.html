@@ -501,7 +501,9 @@
                             textinfo:'percent', textposition:'inside',
                             texttemplate:'%{percent:.1%}',
                             hovertemplate:'%{label}<br>%{value:,.0f} 천원<extra></extra>',
-                            insidetextorientation:'horizontal'
+                            insidetextorientation:'horizontal',
+                            sort: false,
+                            direction: 'clockwise'
                         }], {
                             title: { text:yy+'년 '+mm+'월 개발비 항목별 비중', font:{size:14}, y:0.97 },
                             legend: { orientation:'h', x:0.5, xanchor:'center', y:-0.05, yanchor:'top', traceorder:'normal' },
