@@ -179,8 +179,76 @@
                 });
             }
 
+            // ──────── COST CHART ────────
+            else if (viewType === 'cost') {
+                contentDiv.classList.remove('table-mode');
+                contentDiv.innerHTML = '<div id="chart"></div>';
+                var labels = rows.map(function(r) { return r.date; });
+                var devCostData = rows.map(function(r) { return r.costDev / 1000000; });
+                var bizCostData = rows.map(function(r) { return r.costBiz / 1000000; });
+                var traceDevCost = {
+                    x: labels, y: devCostData,
+                    name: '개발비', type: 'scatter', mode: 'lines',
+                    stackgroup: 'one',
+                    line: { color: 'rgb(55, 128, 191)' },
+                    fillcolor: 'rgba(55, 128, 191, 0.6)',
+                    hovertemplate: '%{x}<br>개발비: %{y:,.0f} 백만원<extra></extra>'
+                };
+                var traceBizCost = {
+                    x: labels, y: bizCostData,
+                    name: '사업비', type: 'scatter', mode: 'lines',
+                    stackgroup: 'one',
+                    line: { color: 'rgb(219, 64, 82)' },
+                    fillcolor: 'rgba(219, 64, 82, 0.6)',
+                    hovertemplate: '%{x}<br>사업비: %{y:,.0f} 백만원<extra></extra>'
+                };
+                var lastLabel = labels[labels.length - 1] || launch;
+                var costLayout = {
+                    title: { text: projectName + ' — 누적 개발비 현황', font: { size: 16 }, y: 0.98 },
+                    xaxis: {
+                        title: '',
+                        tickangle: -45,
+                        tickformat: '%Y-%m',
+                        tickfont: { size: 10 },
+                        nticks: 40,
+                        ticklabeloverflow: 'allow'
+                    },
+                    yaxis: { title: '누적 개발비 (백만원)' },
+                    legend: { orientation: 'h', x: 0.5, xanchor: 'center', y: -0.25, yanchor: 'top' },
+                    margin: { t: 60, b: 90, l: 80, r: 20 },
+                    shapes: [
+                        {
+                            type: 'rect',
+                            x0: currentDate, x1: lastLabel,
+                            y0: 0, y1: 1, yref: 'paper',
+                            fillcolor: 'rgba(255, 255, 255, 0.45)',
+                            line: { width: 0 },
+                            layer: 'above'
+                        },
+                        {
+                            type: 'line',
+                            x0: currentDate, x1: currentDate,
+                            y0: 0, y1: 1, yref: 'paper',
+                            line: { color: 'rgba(0,0,0,0.5)', width: 2, dash: 'dash' },
+                            layer: 'above'
+                        }
+                    ],
+                    annotations: [{
+                        x: currentDate, y: 1.02, yref: 'paper',
+                        text: '◀ 실적 | 예측 ▶',
+                        showarrow: false,
+                        font: { size: 11, color: 'rgba(0,0,0,0.6)' },
+                        yanchor: 'bottom'
+                    }]
+                };
+                var chartDiv = document.getElementById('chart');
+                Plotly.newPlot(chartDiv, [traceDevCost, traceBizCost], costLayout, { responsive: true });
+                window.addEventListener('resize', function() {
+                    Plotly.relayout(chartDiv, { width: window.innerWidth, height: window.innerHeight });
+                });
+            }
             else {
-                contentDiv.innerHTML = '<div class="error"><h2>⚠️ 알 수 없는 type: ' + viewType + '</h2><p>table 또는 chart를 사용하세요.</p></div>';
+                contentDiv.innerHTML = '<div class="error"><h2>⚠️ 알 수 없는 type: ' + viewType + '</h2><p>table, chart, 또는 cost를 사용하세요.</p></div>';
             }
         })
         .catch(function(err) {
