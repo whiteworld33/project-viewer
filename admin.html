@@ -284,6 +284,46 @@ document.addEventListener('DOMContentLoaded', function() {
         return map;
     }
 
+    // ── 항목별 월별 비용 맵 (bar 차트용) ──
+    // 행 인덱스(0-based): 인건비=38, 마케팅비=44, 외주비=46, 감가상각비=52, 서버비=58, 기타운영비=63
+    function getBreakdownMap(sheetName, kickoff, launch) {
+        if (!sheetName || !workbook) return null;
+        var ws = workbook.Sheets[sheetName];
+        if (!ws) return null;
+        var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
+        if (sheet.length < 64) return null;
+        var row2  = sheet[1]  || [];
+        var rLbr  = sheet[38] || [];
+        var rMkt  = sheet[44] || [];
+        var rOut  = sheet[46] || [];
+        var rDep  = sheet[52] || [];
+        var rSrv  = sheet[58] || [];
+        var rOth  = sheet[63] || [];
+        var bdMap = {};
+        for (var c = 0; c < row2.length; c++) {
+            var cell = row2[c];
+            if (cell === null || cell === undefined) continue;
+            var ym = null;
+            if (typeof cell === 'number' && cell > 30000 && cell < 60000) {
+                ym = excelDateToYM(cell);
+            } else if (typeof cell === 'string') {
+                var m2 = cell.match(/(\d{4})[\-\/](\d{1,2})/);
+                if (m2) ym = m2[1] + '-' + ('0' + m2[2]).slice(-2);
+            }
+            if (!ym) continue;
+            if (ym >= kickoff && ym <= launch) {
+                bdMap[ym] = {
+                    labor:        (rLbr[c] != null) ? rLbr[c] : 0,
+                    marketing:    (rMkt[c] != null) ? rMkt[c] : 0,
+                    outsourcing:  (rOut[c] != null) ? rOut[c] : 0,
+                    depreciation: (rDep[c] != null) ? rDep[c] : 0,
+                    server:       (rSrv[c] != null) ? rSrv[c] : 0,
+                    other:        (rOth[c] != null) ? rOth[c] : 0
+                };
+            }
+        }
+        return bdMap;
+    }
     // ── 선택 데이터 수집 ──
     function collectSelectedData() {
         var cards = document.querySelectorAll('.project-card');
@@ -303,11 +343,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // costDev 맵 가져오기 (시트명 있을 때만)
             var costDevMap = null;
+            var breakdownMap = null;
             if (sheetName) {
                 costDevMap = getCostDevMap(sheetName, kickoff, launch);
                 if (!costDevMap) {
                     warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다. 기존 costDev 값을 사용합니다.');
                 }
+                breakdownMap = getBreakdownMap(sheetName, kickoff, launch);
             }
 
             // 비용 시트 사용 시: 월별 값을 누적합으로 변환
@@ -333,7 +375,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         costDev:   costDev,
                         costBiz:   r.costBiz,
                         costTotal: r.costTotal,
-                        costGI:    costDev + r.costBiz  // 누적 costDev + costBiz
+                        costGI:        costDev + r.costBiz,  // 누적 costDev + costBiz
+                        costBreakdown: breakdownMap ? (breakdownMap[r.date] || {labor:0,marketing:0,outsourcing:0,depreciation:0,server:0,other:0}) : null
                     };
                 });
 
@@ -392,10 +435,12 @@ document.addEventListener('DOMContentLoaded', function() {
             var chartUrl = baseUrl + '/view.html?project=' + enc + '&type=chart';
 
             var costUrl = baseUrl + '/view.html?project=' + enc + '&type=cost';
+            var barUrl  = baseUrl + '/view.html?project=' + enc + '&type=bar';
             urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">표</span><code>' + tableUrl + '</code><button class="copy-btn" data-url="' + tableUrl + '">복사</button></div>'
                 + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">MM</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div></div>';
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div>'
+                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">막대</span><code>' + barUrl + '</code><button class="copy-btn" data-url="' + barUrl + '">복사</button></div></div>';
         });
 
         document.getElementById('url-output').innerHTML = urlHTML;
