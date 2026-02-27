@@ -27,7 +27,7 @@
 
         html, body { height: 100%; overflow: hidden; }
         #content { width: 100vw; height: 100vh; }
-        #content.table-mode { height: auto; overflow: auto; padding: 16px; }
+        #content.table-mode { height: 100vh; overflow: hidden; padding: 16px; display: flex; flex-direction: column; box-sizing: border-box; }
         #chart { width: 100%; height: 100%; }
         /* Dashboard */
         .dash-header { font-size: 17px; font-weight: 700; padding: 14px 16px 10px; color: #333; border-bottom: 2px solid #eee; background: #fafafa; }
@@ -91,29 +91,60 @@
             // ──────── TABLE ────────
             if (viewType === 'table') {
                 contentDiv.classList.add('table-mode');
-                var html = '<div class="table-title">📊 ' + projectName + ' — MM &amp; 누적개발비 (' + kickoff + ' ~ ' + launch + ')</div>';
-                html += '<table><thead><tr>'
-                    + '<th>날짜</th><th>MM (개발)</th><th>MM (사업)</th><th>MM (합계)</th>'
-                    + '<th>누적개발비-개발 (백만)</th><th>누적개발비-사업 (백만)</th><th>누적개발비-합계 (백만)</th><th>GI개발비 (백만)</th>'
-                    + '</tr></thead><tbody>';
 
-                rows.forEach(function(r) {
+                // MM 누적 계산 + 개발비(월별) 역산
+                var cumMm = 0;
+                var tableRows = rows.map(function(r, i) {
+                    cumMm += r.mmDev;
+                    var monthCost = (i === 0) ? r.costDev : r.costDev - rows[i - 1].costDev;
+                    return { date: r.date, mmDev: r.mmDev, mmCum: cumMm, costMonth: monthCost, costGI: r.costGI };
+                });
+                var currentIdx = -1;
+                for (var ci = 0; ci < rows.length; ci++) {
+                    if (rows[ci].date === currentDate) { currentIdx = ci; break; }
+                }
+                var titleHtml = '<div class="table-title" style="flex-shrink:0;">📊 ' + projectName + ' — MM &amp; 개발비 현황 (' + kickoff + ' ~ ' + launch + ')</div>';
+                var legendHtml = '<div style="display:flex;gap:16px;font-size:12px;margin-bottom:8px;flex-shrink:0;flex-wrap:wrap;">'
+                    + '<span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#b7f0b1;border:1px solid #4caf50;border-radius:2px;"></span>킥오프</span>'
+                    + '<span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#bee3f8;border:1px solid #3182ce;border-radius:2px;"></span>기준월</span>'
+                    + '<span style="display:flex;align-items:center;gap:4px;"><span style="display:inline-block;width:12px;height:12px;background:#feebc8;border:1px solid #dd6b20;border-radius:2px;"></span>런칭</span>'
+                    + '</div>';
+                var thStyle = 'padding:8px 10px;background:#4a5568;color:#fff;text-align:right;white-space:nowrap;font-weight:500;position:sticky;top:0;z-index:2;';
+                var thCStyle = 'padding:8px 10px;background:#4a5568;color:#fff;text-align:center;white-space:nowrap;font-weight:500;position:sticky;top:0;z-index:2;';
+                var tableHtml = '<div id="tbl-scroll" style="overflow-y:auto;flex:1;border:1px solid #e2e8f0;border-radius:4px;"><table style="width:100%;border-collapse:collapse;font-size:13px;"><thead><tr><th style="' + thCStyle + '">날짜</th><th style="' + thStyle + '">MM (개발)</th><th style="' + thStyle + '">MM 누적</th><th style="' + thStyle + '">개발비 (백만)</th><th style="' + thStyle + '">누적개발비 (백만)</th></tr></thead><tbody>';
+
+
+
+
+
+                tableRows.forEach(function(r, i) {
                     var isForecast = r.date > currentDate;
                     var isCurrent = r.date === currentDate;
-                    var cls = isCurrent ? ' class="is-current"' : (isForecast ? ' class="is-forecast"' : '');
-                    html += '<tr' + cls + '>'
-                        + '<td>' + r.date + '</td>'
-                        + '<td>' + r.mmDev.toFixed(1) + '</td>'
-                        + '<td>' + r.mmBiz.toFixed(1) + '</td>'
-                        + '<td>' + r.mmTotal.toFixed(1) + '</td>'
-                        + '<td>' + Math.round(r.costDev / 1000000).toLocaleString() + '</td>'
-                        + '<td>' + Math.round(r.costBiz / 1000000).toLocaleString() + '</td>'
-                        + '<td>' + Math.round(r.costTotal / 1000000).toLocaleString() + '</td>'
-                        + '<td>' + Math.round(r.costGI / 1000000).toLocaleString() + '</td>'
+                    var isKickoff = r.date === kickoff;
+                    var isLaunch  = r.date === launch;
+                    var rowStyle = isKickoff ? 'background:#b7f0b1;' : isCurrent ? 'background:#bee3f8;font-weight:600;' : isLaunch ? 'background:#feebc8;' : isForecast ? 'color:#a0aec0;' : '';
+                    var tdBase = 'padding:6px 10px;border-bottom:1px solid #e8e8e8;';
+                    tableHtml += '<tr id="tbl-row-' + i + '" style="' + rowStyle + '">'
+                        + '<td style="' + tdBase + 'text-align:center;font-weight:500;">' + r.date + '</td>'
+                        + '<td style="' + tdBase + 'text-align:right;">' + r.mmDev.toFixed(1) + '</td>'
+                        + '<td style="' + tdBase + 'text-align:right;">' + r.mmCum.toFixed(1) + '</td>'
+                        + '<td style="' + tdBase + 'text-align:right;">' + Math.round(r.costMonth / 1000000).toLocaleString() + '</td>'
+                        + '<td style="' + tdBase + 'text-align:right;">' + Math.round(r.costGI / 1000000).toLocaleString() + '</td>'
+
+
+
                         + '</tr>';
                 });
-                html += '</tbody></table>';
-                contentDiv.innerHTML = html;
+                tableHtml += '</tbody></table></div>';
+                contentDiv.innerHTML = titleHtml + legendHtml + tableHtml;
+                if (currentIdx >= 0) {
+                    var scrollEl = document.getElementById('tbl-scroll');
+                    var rowEl = document.getElementById('tbl-row-' + currentIdx);
+                    if (scrollEl && rowEl) {
+                        var offset = rowEl.offsetTop - scrollEl.clientHeight / 2 + rowEl.clientHeight / 2;
+                        scrollEl.scrollTop = Math.max(0, offset);
+                    }
+                }
             }
 
             // ──────── CHART ────────
