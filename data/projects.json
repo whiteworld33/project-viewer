@@ -1,506 +1,2633 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <title>프로젝트 데이터 관리자</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f4f4f9; color: #333; }
-        h1 { text-align: center; margin-bottom: 8px; }
-        .subtitle { text-align: center; color: #888; margin-bottom: 24px; font-size: 14px; }
-        .container { background: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); max-width: 1100px; margin: 0 auto; }
-        .section { margin-bottom: 24px; }
-        .section-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #eee; }
-        .section-title .badge { font-size: 12px; background: #e0e0e0; color: #555; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 400; }
-
-        .file-area { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-        .file-area input[type="file"] { font-size: 14px; }
-        .file-area .status { font-size: 13px; color: #888; }
-
-        #project-list { display: flex; flex-direction: column; gap: 10px; }
-        .project-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa; flex-wrap: wrap; }
-        .project-card.selected { border-color: #007bff; background: #f0f7ff; }
-        .project-card input[type="checkbox"] { width: 18px; height: 18px; flex-shrink: 0; }
-        .project-card .name { font-weight: 500; min-width: 150px; font-size: 14px; }
-        .project-card .dates { display: flex; gap: 6px; font-size: 12px; flex-wrap: wrap; align-items: center; }
-        .project-card .dates label { color: #666; }
-        .project-card .dates input[type="month"] { font-size: 12px; padding: 2px 4px; border: 1px solid #ccc; border-radius: 3px; width: 120px; }
-        .project-card .sheet-wrap { display: flex; align-items: center; gap: 4px; font-size: 12px; }
-        .project-card .sheet-wrap label { color: #666; white-space: nowrap; }
-        .project-card .sheet-wrap input[type="text"] { font-size: 12px; padding: 2px 6px; border: 1px solid #ccc; border-radius: 3px; width: 160px; background: #fffbe6; }
-        .sheet-hint { font-size: 11px; color: #aaa; margin-top: 2px; }
-
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
-        .btn { font-size: 15px; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
-        .btn-primary { background: #007bff; color: #fff; }
-        .btn-primary:hover { background: #0056b3; }
-        .btn-success { background: #28a745; color: #fff; }
-        .btn-success:hover { background: #218838; }
-        .btn-secondary { background: #6c757d; color: #fff; }
-        .btn-secondary:hover { background: #545b62; }
-        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        #url-output { margin-top: 20px; }
-        .url-group { margin-bottom: 16px; }
-        .url-group h4 { margin-bottom: 6px; color: #333; }
-        .url-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .url-row code { flex: 1; background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-size: 13px; word-break: break-all; border: 1px solid #e0e0e0; }
-        .url-row .copy-btn { font-size: 12px; padding: 6px 12px; background: #17a2b8; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
-        .url-row .copy-btn:hover { background: #138496; }
-
-        .msg { padding: 10px 16px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
-        .msg-success { background: #d4edda; color: #155724; }
-        .msg-info { background: #d1ecf1; color: #0c5460; }
-        .msg-warn { background: #fff3cd; color: #856404; }
-        .msg-error { background: #f8d7da; color: #721c24; }
-
-        #storage-info { font-size: 13px; color: #888; text-align: center; margin-top: 10px; }
-
-        .github-url-input { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-        .github-url-input label { font-weight: 500; font-size: 14px; white-space: nowrap; }
-        .github-url-input input { font-size: 14px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
-        .github-url-preview { font-size: 12px; color: #555; background: #f0f7ff; border: 1px solid #b8d9f8; border-radius: 4px; padding: 6px 10px; margin-bottom: 12px; word-break: break-all; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <h1>📊 프로젝트 데이터 관리자</h1>
-    <p class="subtitle">엑셀 → projects.json 다운로드 → GitHub Pages → 노션 임베드</p>
-
-    <!-- STEP 1: 파일 업로드 -->
-    <div class="section">
-        <div class="section-title">1️⃣ 엑셀 파일 업로드</div>
-        <div class="file-area">
-            <input type="file" id="fileInput" accept=".xlsx,.xls">
-            <span class="status" id="file-status">파일을 선택해 주세요</span>
-        </div>
-    </div>
-
-    <!-- STEP 2: 프로젝트 선택 -->
-    <div class="section">
-        <div class="section-title">2️⃣ 프로젝트 선택 및 기간 설정 <span class="badge" id="project-count">0개 탐지</span></div>
-        <p style="font-size:12px; color:#888; margin-bottom:8px;">💡 <strong>비용 시트명</strong>: costDev 데이터를 가져올 시트명을 입력하세요. 비워두면 기존 시트 값을 사용합니다.</p>
-        <div id="project-list">
-            <p style="color:#aaa; font-size:14px;">엑셀 파일을 업로드하면 프로젝트 목록이 표시됩니다.</p>
-        </div>
-        <div class="btn-group" style="justify-content:flex-start; margin-top:10px;">
-            <button class="btn btn-secondary" id="selectAllBtn" style="font-size:13px; padding:6px 14px;" disabled>전체 선택</button>
-            <button class="btn btn-secondary" id="deselectAllBtn" style="font-size:13px; padding:6px 14px;" disabled>전체 해제</button>
-        </div>
-    </div>
-
-    <!-- STEP 3: JSON 다운로드 & URL 생성 -->
-    <div class="section">
-        <div class="section-title">3️⃣ JSON 다운로드 및 임베드 URL 생성</div>
-        <div class="github-url-input">
-            <label>GitHub 계정명:</label>
-            <input type="text" id="accountInput" placeholder="예: whiteworld33">
-            <label style="margin-left:8px;">레포명:</label>
-            <input type="text" id="repoInput" placeholder="예: project-viewer">
-        </div>
-        <div class="github-url-preview" id="urlPreview">🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong></div>
-        <div class="btn-group">
-            <button class="btn btn-success" id="downloadBtn" disabled>📥 projects.json 다운로드</button>
-            <button class="btn btn-primary" id="generateUrlBtn" disabled>🔗 임베드 URL 생성</button>
-        </div>
-        <div id="save-msg"></div>
-        <div id="storage-info"></div>
-        <div id="url-output"></div>
-    </div>
-</div>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-
-    function excelDateToYM(serial) {
-        if (typeof serial !== 'number') return null;
-        if (serial > 59) serial -= 1;
-        var d = new Date((serial - 25568) * 86400 * 1000);
-        return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2);
-    }
-
-    var parsedProjects = {};
-    var workbook = null; // 전역 workbook 참조 (비용 시트 파싱용)
-    var lastSaveData = null;
-
-    // ── STEP 1: 파일 업로드 ──
-    document.getElementById('fileInput').addEventListener('change', function() {
-        var file = this.files[0];
-        if (!file) return;
-        document.getElementById('file-status').textContent = '파싱 중...';
-
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                var data = new Uint8Array(e.target.result);
-                workbook = XLSX.read(data, { type: 'array' }); // 전역 저장
-                var sheetName = '개발전략기획실';
-                var ws = workbook.Sheets[sheetName];
-                if (!ws) throw new Error("'" + sheetName + "' 시트를 찾을 수 없습니다.");
-
-                var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-                parsedProjects = {};
-
-                for (var i = 0; i < sheet.length; i++) {
-                    for (var j = 0; j < (sheet[i] || []).length; j++) {
-                        var cellVal = (sheet[i][j] || '').toString().trim();
-                        if (!cellVal || typeof sheet[i][j] === 'number') continue;
-
-                        var dataRow = i + 5;
-                        if (dataRow >= sheet.length) continue;
-                        var checkVal = (sheet[dataRow] || [])[j];
-                        if (typeof checkVal !== 'number' || checkVal < 30000 || checkVal > 60000) continue;
-
-                        var rows = [];
-                        for (var r = dataRow; r < sheet.length; r++) {
-                            var rv = (sheet[r] || [])[j];
-                            if (rv === null || typeof rv !== 'number') break;
-                            var ym = excelDateToYM(rv);
-                            if (!ym) break;
-                            var row = sheet[r] || [];
-                            rows.push({
-                                date: ym,
-                                mmDev:    row[j + 1] || 0,
-                                mmBiz:    row[j + 2] || 0,
-                                mmTotal:  row[j + 3] || 0,
-                                costDev:  row[j + 4] || 0,
-                                costBiz:  row[j + 5] || 0,
-                                costTotal: row[j + 6] || 0
-                                // costGI는 다운로드 시 costDev+costBiz로 계산
-                            });
-                        }
-                        if (rows.length > 0) {
-                            parsedProjects[cellVal] = {
-                                rows: rows,
-                                firstDate: rows[0].date,
-                                lastDate: rows[rows.length - 1].date
-                            };
-                        }
-                    }
-                }
-
-                var names = Object.keys(parsedProjects);
-                document.getElementById('file-status').textContent = file.name + ' (' + names.length + '개 프로젝트 탐지)';
-                document.getElementById('project-count').textContent = names.length + '개 탐지';
-                renderProjectList(names);
-
-            } catch(err) {
-                document.getElementById('file-status').textContent = '오류: ' + err.message;
-                document.getElementById('project-list').innerHTML = '<p style="color:red;">' + err.message + '</p>';
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    });
-
-    // ── 프로젝트 목록 렌더링 ──
-    function renderProjectList(names) {
-        var container = document.getElementById('project-list');
-        if (names.length === 0) {
-            container.innerHTML = '<p style="color:#aaa;">탐지된 프로젝트가 없습니다.</p>';
-            return;
+{
+  "Nakwon: Last Paradise": {
+    "kickoff": "2022-12",
+    "current": "2025-12",
+    "launch": "2027-03",
+    "rows": [
+      {
+        "date": "2022-12",
+        "mmDev": 21.387619047619047,
+        "mmBiz": 0,
+        "mmTotal": 21.387619047619047,
+        "costDev": 332445807.0016882,
+        "costBiz": 0,
+        "costTotal": 332445807.0016882,
+        "costGI": 332445807.0016882,
+        "costBreakdown": {
+          "labor": 304262987.2612468,
+          "marketing": 0,
+          "outsourcing": 681118.968986979,
+          "depreciation": 10721509.242885647,
+          "server": 916573.0799304422,
+          "other": 15863618.448638342
         }
-        var now = new Date();
-        var currentYM = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
-
-        container.innerHTML = names.map(function(name) {
-            var p = parsedProjects[name];
-            return '<div class="project-card" data-name="' + name + '">'
-                + '<input type="checkbox" class="proj-check">'
-                + '<span class="name">' + name + '</span>'
-                + '<a class="gh-link" href="#" target="_blank" style="font-size:12px;color:#007bff;text-decoration:none;margin-left:6px;display:none;">🔗 보기</a>'
-                + '<div class="dates">'
-                + '<div><label>킥오프</label><input type="month" class="dt-kickoff" value="' + p.firstDate + '"></div>'
-                + '<div><label>기준월</label><input type="month" class="dt-current" value="' + currentYM + '"></div>'
-                + '<div><label>런칭</label><input type="month" class="dt-launch" value="' + p.lastDate + '"></div>'
-                + '</div>'
-                + '<div class="sheet-wrap">'
-                + '<label>비용 시트명</label>'
-                + '<input type="text" class="dt-sheet" placeholder="시트명 입력">'
-                + '</div>'
-                + '</div>';
-        }).join('');
-
-        container.querySelectorAll('.project-card').forEach(function(card) {
-            card.addEventListener('click', function(e) {
-                if (e.target.tagName === 'INPUT') return;
-                var cb = card.querySelector('.proj-check');
-                cb.checked = !cb.checked;
-                card.classList.toggle('selected', cb.checked);
-                updateBtns();
-            });
-            card.querySelector('.proj-check').addEventListener('change', function() {
-                card.classList.toggle('selected', this.checked);
-                updateBtns();
-            });
-        });
-
-        document.getElementById('selectAllBtn').disabled = false;
-        document.getElementById('deselectAllBtn').disabled = false;
-        updateBtns();
-        updateProjectLinks();
-    }
-
-    function updateBtns() {
-        var checked = document.querySelectorAll('.proj-check:checked').length;
-        document.getElementById('downloadBtn').disabled = (checked === 0);
-        document.getElementById('generateUrlBtn').disabled = (checked === 0);
-    }
-
-    function getBaseUrl() {
-        var account = document.getElementById('accountInput').value.trim().replace(/\/+$/, '');
-        var repo    = document.getElementById('repoInput').value.trim().replace(/\/+$/, '');
-        if (!account || !repo) return '';
-        return 'https://' + account + '.github.io/' + repo;
-    }
-    function updateUrlPreview() {
-        var base = getBaseUrl();
-        var preview = document.getElementById('urlPreview');
-        if (base) {
-            preview.innerHTML = '🔗 생성될 기본 URL: <strong>' + base + '</strong>';
-        } else {
-            preview.innerHTML = '🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong>';
+      },
+      {
+        "date": "2023-01",
+        "mmDev": 22.530833333333334,
+        "mmBiz": 0,
+        "mmTotal": 22.530833333333334,
+        "costDev": 584522556.7139611,
+        "costBiz": 0,
+        "costTotal": 584522556.7139611,
+        "costGI": 584522556.7139611,
+        "costBreakdown": {
+          "labor": 221001081.41858837,
+          "marketing": 0,
+          "outsourcing": 767508.2755063942,
+          "depreciation": 12889654.40289213,
+          "server": 851709.7680776363,
+          "other": 16566795.847208343
         }
-    }
-    function updateProjectLinks() {
-        var base = getBaseUrl();
-        document.querySelectorAll('.project-card').forEach(function(card) {
-            var name = card.getAttribute('data-name');
-            var link = card.querySelector('.gh-link');
-            if (!link) return;
-            if (base && name) {
-                var url = base + '/view.html?project=' + encodeURIComponent(name) + '&type=dashboard';
-                link.href = url;
-                link.style.display = 'inline';
-            } else {
-                link.href = '#';
-                link.style.display = 'none';
-            }
-        });
-        updateUrlPreview();
-    }
-    document.getElementById('accountInput').addEventListener('input', updateProjectLinks);
-    document.getElementById('repoInput').addEventListener('input', updateProjectLinks);
-    document.getElementById('selectAllBtn').addEventListener('click', function() {
-        document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = true; cb.closest('.project-card').classList.add('selected'); });
-        updateBtns();
-    });
-    document.getElementById('deselectAllBtn').addEventListener('click', function() {
-        document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = false; cb.closest('.project-card').classList.remove('selected'); });
-        updateBtns();
-    });
-
-    // ── costDev 시트 파싱 ──
-    // 지정 시트의 2행(index 1)에서 날짜 스캔 → 킥오프~런칭 범위 → 38행(index 37) 값 수집
-    function getCostDevMap(sheetName, kickoff, launch) {
-        if (!sheetName || !workbook) return null;
-        var ws = workbook.Sheets[sheetName];
-        if (!ws) return null;
-
-        var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-        if (sheet.length < 38) return null;
-
-        var row2  = sheet[1]  || []; // 2행: 날짜 헤더
-        var row38 = sheet[37] || []; // 38행: costDev 데이터
-
-        var map = {};
-        for (var c = 0; c < row2.length; c++) {
-            var cell = row2[c];
-            if (cell === null || cell === undefined) continue;
-            var ym = null;
-            if (typeof cell === 'number' && cell > 30000 && cell < 60000) {
-                ym = excelDateToYM(cell);
-            } else if (typeof cell === 'string') {
-                // "YYYY-MM" 또는 "YYYY/MM" 형태 대응
-                var m = cell.match(/(\d{4})[\-\/](\d{1,2})/);
-                if (m) ym = m[1] + '-' + ('0' + m[2]).slice(-2);
-            }
-            if (!ym) continue;
-            if (ym >= kickoff && ym <= launch) {
-                map[ym] = (row38[c] !== null && row38[c] !== undefined) ? row38[c] : 0;
-            }
+      },
+      {
+        "date": "2023-02",
+        "mmDev": 25.5225,
+        "mmBiz": 0,
+        "mmTotal": 25.5225,
+        "costDev": 840970323.8441322,
+        "costBiz": 0,
+        "costTotal": 840970323.8441322,
+        "costGI": 840970323.8441322,
+        "costBreakdown": {
+          "labor": 223418978.9224477,
+          "marketing": 0,
+          "outsourcing": 699388.262110245,
+          "depreciation": 13401622.949325096,
+          "server": 687141.5460135624,
+          "other": 18240635.450274434
         }
-        return map;
-    }
-
-    // ── 항목별 월별 비용 맵 (bar 차트용) ──
-    // 행 인덱스(0-based): 인건비=38, 마케팅비=44, 외주비=46, 감가상각비=52, 서버비=58, 기타운영비=63
-    function getBreakdownMap(sheetName, kickoff, launch) {
-        if (!sheetName || !workbook) return null;
-        var ws = workbook.Sheets[sheetName];
-        if (!ws) return null;
-        var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
-        if (sheet.length < 64) return null;
-        var row2  = sheet[1]  || [];
-        var rLbr  = sheet[38] || [];
-        var rMkt  = sheet[44] || [];
-        var rOut  = sheet[46] || [];
-        var rDep  = sheet[52] || [];
-        var rSrv  = sheet[58] || [];
-        var rOth  = sheet[63] || [];
-        var bdMap = {};
-        for (var c = 0; c < row2.length; c++) {
-            var cell = row2[c];
-            if (cell === null || cell === undefined) continue;
-            var ym = null;
-            if (typeof cell === 'number' && cell > 30000 && cell < 60000) {
-                ym = excelDateToYM(cell);
-            } else if (typeof cell === 'string') {
-                var m2 = cell.match(/(\d{4})[\-\/](\d{1,2})/);
-                if (m2) ym = m2[1] + '-' + ('0' + m2[2]).slice(-2);
-            }
-            if (!ym) continue;
-            if (ym >= kickoff && ym <= launch) {
-                bdMap[ym] = {
-                    labor:        (rLbr[c] != null) ? rLbr[c] : 0,
-                    marketing:    (rMkt[c] != null) ? rMkt[c] : 0,
-                    outsourcing:  (rOut[c] != null) ? rOut[c] : 0,
-                    depreciation: (rDep[c] != null) ? rDep[c] : 0,
-                    server:       (rSrv[c] != null) ? rSrv[c] : 0,
-                    other:        (rOth[c] != null) ? rOth[c] : 0
-                };
-            }
+      },
+      {
+        "date": "2023-03",
+        "mmDev": 31.833095238095236,
+        "mmBiz": 0,
+        "mmTotal": 31.833095238095236,
+        "costDev": 1225638939.6887279,
+        "costBiz": 0,
+        "costTotal": 1225638939.6887279,
+        "costGI": 1225638939.6887279,
+        "costBreakdown": {
+          "labor": 341275796.5186215,
+          "marketing": 0,
+          "outsourcing": 774866.0752203134,
+          "depreciation": 17511072.475317396,
+          "server": 734455.1844578405,
+          "other": 24372425.59097863
         }
-        return bdMap;
-    }
-    // ── 선택 데이터 수집 ──
-    function collectSelectedData() {
-        var cards = document.querySelectorAll('.project-card');
-        var saveData = {};
-        var warnings = [];
-
-        cards.forEach(function(card) {
-            var cb = card.querySelector('.proj-check');
-            if (!cb.checked) return;
-            var name      = card.getAttribute('data-name');
-            var kickoff   = card.querySelector('.dt-kickoff').value;
-            var current   = card.querySelector('.dt-current').value;
-            var launch    = card.querySelector('.dt-launch').value;
-            var sheetName = card.querySelector('.dt-sheet').value.trim();
-            var proj      = parsedProjects[name];
-            if (!proj) return;
-
-            // costDev 맵 가져오기 (시트명 있을 때만)
-            var costDevMap = null;
-            var breakdownMap = null;
-            if (sheetName) {
-                costDevMap = getCostDevMap(sheetName, kickoff, launch);
-                if (!costDevMap) {
-                    warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다. 기존 costDev 값을 사용합니다.');
-                }
-                breakdownMap = getBreakdownMap(sheetName, kickoff, launch);
-            }
-
-            // 비용 시트 사용 시: 월별 값을 누적합으로 변환
-            var cumCostDev = 0;
-            var filtered = proj.rows
-                .filter(function(r) { return r.date >= kickoff && r.date <= launch; })
-                .map(function(r) {
-                    var costDev;
-                    if (costDevMap) {
-                        // 비용 시트 지정됨: 월별 값을 누적
-                        var monthly = (costDevMap[r.date] !== undefined) ? costDevMap[r.date] : 0;
-                        cumCostDev += monthly;
-                        costDev = cumCostDev;
-                    } else {
-                        // 비용 시트 미지정: 기존 시트 값 그대로 (이미 누적값)
-                        costDev = r.costDev;
-                    }
-                    return {
-                        date:      r.date,
-                        mmDev:     r.mmDev,
-                        mmBiz:     r.mmBiz,
-                        mmTotal:   r.mmTotal,
-                        costDev:   costDev,
-                        costBiz:   r.costBiz,
-                        costTotal: r.costTotal,
-                        costGI:        costDev + r.costBiz,  // 누적 costDev + costBiz
-                        costBreakdown: breakdownMap ? (breakdownMap[r.date] || {labor:0,marketing:0,outsourcing:0,depreciation:0,server:0,other:0}) : null
-                    };
-                });
-
-            saveData[name] = {
-                kickoff: kickoff,
-                current: current,
-                launch:  launch,
-                rows:    filtered
-            };
-        });
-        return { data: saveData, warnings: warnings };
-    }
-
-    // ── JSON 다운로드 ──
-    document.getElementById('downloadBtn').addEventListener('click', function() {
-        var result = collectSelectedData();
-        lastSaveData = result.data;
-
-        var jsonStr = JSON.stringify(lastSaveData, null, 2);
-        var blob = new Blob([jsonStr], { type: 'application/json' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = 'projects.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        var sizeKB = (blob.size / 1024).toFixed(1);
-        var cnt = Object.keys(lastSaveData).length;
-        var msgHtml = '<div class="msg msg-success">✅ projects.json 다운로드 완료 (' + cnt + '개 프로젝트, ' + sizeKB + ' KB)</div>'
-            + '<div class="msg msg-warn" style="margin-top:8px;">📌 다운로드한 파일을 GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
-        if (result.warnings.length > 0) {
-            msgHtml += '<div class="msg msg-error" style="margin-top:8px;">' + result.warnings.join('<br>') + '</div>';
+      },
+      {
+        "date": "2023-04",
+        "mmDev": 41.260999999999996,
+        "mmBiz": 0,
+        "mmTotal": 41.260999999999996,
+        "costDev": 1724588156.6915014,
+        "costBiz": 0,
+        "costTotal": 1724588156.6915014,
+        "costGI": 1724588156.6915014,
+        "costBreakdown": {
+          "labor": 446561176.62873095,
+          "marketing": 0,
+          "outsourcing": 285437.4974988631,
+          "depreciation": 22224158.1395594,
+          "server": 627617.5704720698,
+          "other": 29250827.166512176
         }
-        document.getElementById('save-msg').innerHTML = msgHtml;
-    });
-
-    // ── 임베드 URL 생성 ──
-    document.getElementById('generateUrlBtn').addEventListener('click', function() {
-        var baseUrl = getBaseUrl();
-        if (!baseUrl) {
-            alert('GitHub 계정명과 레포명을 모두 입력해 주세요.');
-            return;
+      },
+      {
+        "date": "2023-05",
+        "mmDev": 43.389145408163266,
+        "mmBiz": 0,
+        "mmTotal": 43.389145408163266,
+        "costDev": 2171378554.39156,
+        "costBiz": 0,
+        "costTotal": 2171378554.39156,
+        "costGI": 2171378554.39156,
+        "costBreakdown": {
+          "labor": 395183487.5175927,
+          "marketing": 0,
+          "outsourcing": 1077593.3855219749,
+          "depreciation": 23628062.890365846,
+          "server": 409593.3994166024,
+          "other": 26491660.507161688
         }
-
-        var result = collectSelectedData();
-        var data   = result.data;
-        var names  = Object.keys(data);
-
-        var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 노션 임베드용 URL (' + names.length + '개)</h3>';
-        names.forEach(function(name) {
-            var enc = encodeURIComponent(name);
-            var tableUrl = baseUrl + '/view.html?project=' + enc + '&type=table';
-            var chartUrl = baseUrl + '/view.html?project=' + enc + '&type=chart';
-
-            var costUrl    = baseUrl + '/view.html?project=' + enc + '&type=cost';
-            var barUrl     = baseUrl + '/view.html?project=' + enc + '&type=bar';
-            var pieUrl     = baseUrl + '/view.html?project=' + enc + '&type=pie';
-            var pieUrlPrev = baseUrl + '/view.html?project=' + enc + '&type=pie&month=prev';
-            urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">표</span><code>' + tableUrl + '</code><button class="copy-btn" data-url="' + tableUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">MM</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">막대</span><code>' + barUrl + '</code><button class="copy-btn" data-url="' + barUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(기준)</span><code>' + pieUrl + '</code><button class="copy-btn" data-url="' + pieUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(전달)</span><code>' + pieUrlPrev + '</code><button class="copy-btn" data-url="' + pieUrlPrev + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">대시보드</span><code>' + (baseUrl + '/view.html?project=' + enc + '&type=dashboard') + '</code><button class="copy-btn" data-url="' + (baseUrl + '/view.html?project=' + enc + '&type=dashboard') + '">복사</button></div></div>';
-        });
-
-        document.getElementById('url-output').innerHTML = urlHTML;
-
-        document.querySelectorAll('.copy-btn').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var self = this;
-                navigator.clipboard.writeText(self.getAttribute('data-url')).then(function() {
-                    self.textContent = '✓ 복사됨';
-                    setTimeout(function() { self.textContent = '복사'; }, 1500);
-                });
-            });
-        });
-    });
-});
-</script>
-</body>
-</html>
+      },
+      {
+        "date": "2023-06",
+        "mmDev": 42.71979797979798,
+        "mmBiz": 0,
+        "mmTotal": 42.71979797979798,
+        "costDev": 2638517196.230086,
+        "costBiz": 0,
+        "costTotal": 2638517196.230086,
+        "costGI": 2638517196.230086,
+        "costBreakdown": {
+          "labor": 402447190.02309203,
+          "marketing": 0,
+          "outsourcing": 5212004.569674951,
+          "depreciation": 23075200.67950458,
+          "server": 547874.5183276851,
+          "other": 35856372.0479264
+        }
+      },
+      {
+        "date": "2023-07",
+        "mmDev": 45.425975,
+        "mmBiz": 0,
+        "mmTotal": 45.425975,
+        "costDev": 3160878990.669772,
+        "costBiz": 0,
+        "costTotal": 3160878990.669772,
+        "costGI": 3160878990.669772,
+        "costBreakdown": {
+          "labor": 459997707.17406,
+          "marketing": 0,
+          "outsourcing": 5843369.781360424,
+          "depreciation": 24936381.23306018,
+          "server": 1698319.2273459858,
+          "other": 29886017.023859695
+        }
+      },
+      {
+        "date": "2023-08",
+        "mmDev": 54.22607310215558,
+        "mmBiz": 2.122058740276754,
+        "mmTotal": 56.34813184243234,
+        "costDev": 3742274139.8750067,
+        "costBiz": 21234074.087347187,
+        "costTotal": 3763508213.9623537,
+        "costGI": 3763508213.9623537,
+        "costBreakdown": {
+          "labor": 506378031.0363455,
+          "marketing": 0,
+          "outsourcing": 474524.60505224863,
+          "depreciation": 28997664.087038986,
+          "server": 3294261.9202831686,
+          "other": 42250667.556514814
+        }
+      },
+      {
+        "date": "2023-09",
+        "mmDev": 53.971818003666904,
+        "mmBiz": 3.7047521184755983,
+        "mmTotal": 57.6765701221425,
+        "costDev": 4482835167.381174,
+        "costBiz": 77059796.72033489,
+        "costTotal": 4560641728.285039,
+        "costGI": 4559894964.101509,
+        "costBreakdown": {
+          "labor": 637593221.5728227,
+          "marketing": 0,
+          "outsourcing": 28142182.950282827,
+          "depreciation": 29125168.17092099,
+          "server": 7900277.45385487,
+          "other": 37800177.358286396
+        }
+      },
+      {
+        "date": "2023-10",
+        "mmDev": 56.708605954333926,
+        "mmBiz": 4.722180532127147,
+        "mmTotal": 61.43078648646107,
+        "costDev": 5195569247.443721,
+        "costBiz": 123573895.30284937,
+        "costTotal": 5322643417.066577,
+        "costGI": 5319143142.746571,
+        "costBreakdown": {
+          "labor": 578443491.360054,
+          "marketing": 48216324,
+          "outsourcing": 13305363.6741075,
+          "depreciation": 22725739.557455417,
+          "server": 12603675.340039672,
+          "other": 37439486.13088997
+        }
+      },
+      {
+        "date": "2023-11",
+        "mmDev": 55.34537839254081,
+        "mmBiz": 5.263443440545368,
+        "mmTotal": 60.608821833086175,
+        "costDev": 5861708797.874585,
+        "costBiz": 174393793.36629128,
+        "costTotal": 6043265978.538917,
+        "costGI": 6036102591.240876,
+        "costBreakdown": {
+          "labor": 540106793.117197,
+          "marketing": 24384308.000000004,
+          "outsourcing": 1411370.88549573,
+          "depreciation": 31394832.691865228,
+          "server": 27207394.783141285,
+          "other": 41634850.95316537
+        }
+      },
+      {
+        "date": "2023-12",
+        "mmDev": 60.13965469073695,
+        "mmBiz": 5.453415724825582,
+        "mmTotal": 65.59307041556252,
+        "costDev": 7101059352.6944685,
+        "costBiz": 235617791.10801476,
+        "costTotal": 7334556761.20708,
+        "costGI": 7336677143.802484,
+        "costBreakdown": {
+          "labor": 987112235.4431707,
+          "marketing": 126434479,
+          "outsourcing": 11943697.749286087,
+          "depreciation": 34726581.2560007,
+          "server": 18377999.330610324,
+          "other": 60755562.04081583
+        }
+      },
+      {
+        "date": "2024-01",
+        "mmDev": 65.14327760817243,
+        "mmBiz": 3.047077599659526,
+        "mmTotal": 68.19035520783196,
+        "costDev": 7800810448.538138,
+        "costBiz": 263516380.68503672,
+        "costTotal": 8069338044.203902,
+        "costGI": 8064326829.223175,
+        "costBreakdown": {
+          "labor": 615745332.3805054,
+          "marketing": 5134118,
+          "outsourcing": 780466.7586981459,
+          "depreciation": 35887868.86445439,
+          "server": 12555641.499180116,
+          "other": 29647668.340831563
+        }
+      },
+      {
+        "date": "2024-02",
+        "mmDev": 65.97404213634086,
+        "mmBiz": 1.8907776406277552,
+        "mmTotal": 67.86481977696862,
+        "costDev": 8562826508.344347,
+        "costBiz": 282946012.99452347,
+        "costTotal": 8858178497.420574,
+        "costGI": 8845772521.338871,
+        "costBreakdown": {
+          "labor": 662257795.4633764,
+          "marketing": 5321912,
+          "outsourcing": 1519919.5225997705,
+          "depreciation": 37125694.89743616,
+          "server": 9738446.459255563,
+          "other": 46052291.46354092
+        }
+      },
+      {
+        "date": "2024-03",
+        "mmDev": 75.93585058871295,
+        "mmBiz": 1.2458884877657437,
+        "mmTotal": 77.18173907647869,
+        "costDev": 9448435113.223982,
+        "costBiz": 298160565.6241464,
+        "costTotal": 9772783337.227827,
+        "costGI": 9746595678.848127,
+        "costBreakdown": {
+          "labor": 769214364.6577411,
+          "marketing": 5333451,
+          "outsourcing": 1486792.9055971405,
+          "depreciation": 43292970.53106511,
+          "server": 7181366.415002838,
+          "other": 59099659.37022897
+        }
+      },
+      {
+        "date": "2024-04",
+        "mmDev": 72.37937245210865,
+        "mmBiz": 13.419369031276139,
+        "mmTotal": 85.79874148338479,
+        "costDev": 10402524760.034735,
+        "costBiz": 465056508.14017534,
+        "costTotal": 10901782910.123804,
+        "costGI": 10867581268.17491,
+        "costBreakdown": {
+          "labor": 833794821.8304179,
+          "marketing": 5383467,
+          "outsourcing": 21049084.579856005,
+          "depreciation": 39243159.70359918,
+          "server": 7023995.846566455,
+          "other": 47595117.85031328
+        }
+      },
+      {
+        "date": "2024-05",
+        "mmDev": 74.59,
+        "mmBiz": 11.951929957249261,
+        "mmTotal": 86.54192995724927,
+        "costDev": 11273060512.870665,
+        "costBiz": 601710768.8595634,
+        "costTotal": 11885973308.99017,
+        "costGI": 11874771281.730228,
+        "costBreakdown": {
+          "labor": 760844394.7749166,
+          "marketing": 5500437.999999999,
+          "outsourcing": 740937.528228044,
+          "depreciation": 43254590.32611239,
+          "server": 6617083.210083345,
+          "other": 53578308.99659029
+        }
+      },
+      {
+        "date": "2024-06",
+        "mmDev": 79.52,
+        "mmBiz": 12.940577779072797,
+        "mmTotal": 92.46057777907279,
+        "costDev": 12180914946.60313,
+        "costBiz": 736694034.0031114,
+        "costTotal": 13010829951.841715,
+        "costGI": 12917608980.606241,
+        "costBreakdown": {
+          "labor": 772674996.2862102,
+          "marketing": 0,
+          "outsourcing": 12218404.322257802,
+          "depreciation": 44682960.974512845,
+          "server": 7888021.782197261,
+          "other": 70390050.36728714
+        }
+      },
+      {
+        "date": "2024-07",
+        "mmDev": 81.227860329412,
+        "mmBiz": 12.487360247388512,
+        "mmTotal": 93.7152205768005,
+        "costDev": 13155962020.65982,
+        "costBiz": 876894315.0509593,
+        "costTotal": 14148693498.279531,
+        "costGI": 14032856335.71078,
+        "costBreakdown": {
+          "labor": 844444503.9023851,
+          "marketing": 0,
+          "outsourcing": 18862412.48883708,
+          "depreciation": 48057818.48673768,
+          "server": 6693052.923313603,
+          "other": 56989286.25541696
+        }
+      },
+      {
+        "date": "2024-08",
+        "mmDev": 80.68980852325171,
+        "mmBiz": 12.418838196541966,
+        "mmTotal": 93.10864671979368,
+        "costDev": 14084250775.506392,
+        "costBiz": 1008893871.4811032,
+        "costTotal": 15212312162.167992,
+        "costGI": 15093144646.987495,
+        "costBreakdown": {
+          "labor": 810198702.6060675,
+          "marketing": 0,
+          "outsourcing": 2571957.8515829816,
+          "depreciation": 50505852.832215816,
+          "server": 5799317.991568249,
+          "other": 59212923.56513585
+        }
+      },
+      {
+        "date": "2024-09",
+        "mmDev": 82.91527092122612,
+        "mmBiz": 11.471371002960913,
+        "mmTotal": 94.38664192418703,
+        "costDev": 15101905373.771343,
+        "costBiz": 1155186464.2238228,
+        "costTotal": 16390265073.3544,
+        "costGI": 16257091837.995167,
+        "costBreakdown": {
+          "labor": 887988013.0516694,
+          "marketing": 0,
+          "outsourcing": 1925586.1533528045,
+          "depreciation": 51148384.57532585,
+          "server": 6582021.942137041,
+          "other": 70010592.5424667
+        }
+      },
+      {
+        "date": "2024-10",
+        "mmDev": 85.37648744882553,
+        "mmBiz": 11.884316855642776,
+        "mmTotal": 97.26080430446831,
+        "costDev": 16155760063.598337,
+        "costBiz": 1285437747.679399,
+        "costTotal": 17561495802.82897,
+        "costGI": 17441197811.277737,
+        "costBreakdown": {
+          "labor": 928537199.721768,
+          "marketing": 2609324,
+          "outsourcing": 1143688.1526045576,
+          "depreciation": 55550944.81610122,
+          "server": 7028260.788108147,
+          "other": 58985272.348412886
+        }
+      },
+      {
+        "date": "2024-11",
+        "mmDev": 84.92974441475141,
+        "mmBiz": 10.083269552498672,
+        "mmTotal": 95.01301396725009,
+        "costDev": 17171404136.990072,
+        "costBiz": 1400950203.2884746,
+        "costTotal": 18711429389.786575,
+        "costGI": 18572354340.278545,
+        "costBreakdown": {
+          "labor": 888807061.2347591,
+          "marketing": 0,
+          "outsourcing": 3531869.8466647863,
+          "depreciation": 56083034.65678896,
+          "server": 8276580.507983514,
+          "other": 58945527.14553929
+        }
+      },
+      {
+        "date": "2024-12",
+        "mmDev": 83.30210661976042,
+        "mmBiz": 11.80366495625692,
+        "mmTotal": 95.10577157601735,
+        "costDev": 18533679604.996883,
+        "costBiz": 1548701617.1575937,
+        "costTotal": 20248546322.42208,
+        "costGI": 20082381222.154476,
+        "costBreakdown": {
+          "labor": 1201986079.8591766,
+          "marketing": 0,
+          "outsourcing": 862470.2504426986,
+          "depreciation": 55260559.10827187,
+          "server": 6834060.937815289,
+          "other": 97332297.85110472
+        }
+      },
+      {
+        "date": "2025-01",
+        "mmDev": 93.01226625831255,
+        "mmBiz": 10.640636000307119,
+        "mmTotal": 103.65290225861966,
+        "costDev": 19630241494.005405,
+        "costBiz": 1674754325.29946,
+        "costTotal": 21500892126.52456,
+        "costGI": 21304995819.304867,
+        "costBreakdown": {
+          "labor": 979361652.3054725,
+          "marketing": 0,
+          "outsourcing": 878343.603855364,
+          "depreciation": 60816533.04755904,
+          "server": 9937610.307313241,
+          "other": 45567749.74432191
+        }
+      },
+      {
+        "date": "2025-02",
+        "mmDev": 93.72332721914489,
+        "mmBiz": 12.215831590155139,
+        "mmTotal": 105.93915880930003,
+        "costDev": 20687775004.5305,
+        "costBiz": 1805493286.9188032,
+        "costTotal": 22734645642.858074,
+        "costGI": 22493268291.449303,
+        "costBreakdown": {
+          "labor": 918381190.6497855,
+          "marketing": 0,
+          "outsourcing": 3584987.3550826833,
+          "depreciation": 58732191.01341183,
+          "server": 6361940.867800463,
+          "other": 70473200.63901377
+        }
+      },
+      {
+        "date": "2025-03",
+        "mmDev": 94.69170169235439,
+        "mmBiz": 13.381415441928487,
+        "mmTotal": 108.07311713428287,
+        "costDev": 21933583694.144737,
+        "costBiz": 1970633099.979402,
+        "costTotal": 24153850495.030033,
+        "costGI": 23904216794.124138,
+        "costBreakdown": {
+          "labor": 1093688321.62963,
+          "marketing": 0,
+          "outsourcing": 3218441.6962404028,
+          "depreciation": 63850509.25375248,
+          "server": 7348652.553214912,
+          "other": 77702764.48140123
+        }
+      },
+      {
+        "date": "2025-04",
+        "mmDev": 98.52358538534565,
+        "mmBiz": 12.969041244463623,
+        "mmTotal": 111.49262662980928,
+        "costDev": 23161854702.4889,
+        "costBiz": 2048483581.3808815,
+        "costTotal": 25460836800.00452,
+        "costGI": 25210338283.86978,
+        "costBreakdown": {
+          "labor": 1053720301.1726055,
+          "marketing": 0,
+          "outsourcing": 12963023.953684328,
+          "depreciation": 66757236.6173424,
+          "server": 7443540.206928983,
+          "other": 87386906.39359899
+        }
+      },
+      {
+        "date": "2025-05",
+        "mmDev": 89.85404240374788,
+        "mmBiz": 15.569256658016236,
+        "mmTotal": 105.42329906176411,
+        "costDev": 24331092659.705795,
+        "costBiz": 2220568737.144791,
+        "costTotal": 26835577427.054295,
+        "costGI": 26551661396.850586,
+        "costBreakdown": {
+          "labor": 992761823.9576213,
+          "marketing": 3323318.9999999995,
+          "outsourcing": 29716333.04950674,
+          "depreciation": 59861155.49591428,
+          "server": 10261651.87774278,
+          "other": 73313673.83611085
+        }
+      },
+      {
+        "date": "2025-06",
+        "mmDev": 90.43069585559715,
+        "mmBiz": 13.375770859447439,
+        "mmTotal": 103.80646671504459,
+        "costDev": 25446427051.335457,
+        "costBiz": 2370524786.7973914,
+        "costTotal": 28131784059.241665,
+        "costGI": 27816951838.132847,
+        "costBreakdown": {
+          "labor": 906819566.037918,
+          "marketing": 0,
+          "outsourcing": 34518481.52041736,
+          "depreciation": 81342706.71925834,
+          "server": 10315028.88525075,
+          "other": 82338608.46681646
+        }
+      },
+      {
+        "date": "2025-07",
+        "mmDev": 91.8730811200387,
+        "mmBiz": 12.059725868613619,
+        "mmTotal": 103.93280698865232,
+        "costDev": 26689363349.090137,
+        "costBiz": 2520831939.62417,
+        "costTotal": 29544214592.24779,
+        "costGI": 29210195288.714306,
+        "costBreakdown": {
+          "labor": 1014736348.1673018,
+          "marketing": 0,
+          "outsourcing": 58827027.91871986,
+          "depreciation": 64295201.607292846,
+          "server": 11528494.37176166,
+          "other": 93549225.68960409
+        }
+      },
+      {
+        "date": "2025-08",
+        "mmDev": 95.40567107339176,
+        "mmBiz": 10.882097701938015,
+        "mmTotal": 106.28776877532977,
+        "costDev": 27946703080.55866,
+        "costBiz": 2654050831.9901013,
+        "costTotal": 30951169450.05623,
+        "costGI": 30600753912.54876,
+        "costBreakdown": {
+          "labor": 1039627063.4855933,
+          "marketing": 0,
+          "outsourcing": 68564540.70179012,
+          "depreciation": 64835588.65814002,
+          "server": 9492731.816911314,
+          "other": 74819806.8060863
+        }
+      },
+      {
+        "date": "2025-09",
+        "mmDev": 105.4091704712571,
+        "mmBiz": 9.622787303676544,
+        "mmTotal": 115.03195777493364,
+        "costDev": 29454934173.121807,
+        "costBiz": 2778821726.3828897,
+        "costTotal": 32595130671.015816,
+        "costGI": 32233755899.504696,
+        "costBreakdown": {
+          "labor": 1286144279.440839,
+          "marketing": 0,
+          "outsourcing": 63185629.845590934,
+          "depreciation": 68148978.21284395,
+          "server": 10088156.17999752,
+          "other": 80664048.88387711
+        }
+      },
+      {
+        "date": "2025-10",
+        "mmDev": 105.4361790289103,
+        "mmBiz": 8.688000822515965,
+        "mmTotal": 114.12417985142626,
+        "costDev": 30760443867.486237,
+        "costBiz": 2882194583.088468,
+        "costTotal": 34034412886.278763,
+        "costGI": 33642638450.574703,
+        "costBreakdown": {
+          "labor": 1117785673.8678272,
+          "marketing": 0,
+          "outsourcing": 22281273.162218317,
+          "depreciation": 72858204.27839912,
+          "server": 10497391.880584592,
+          "other": 82087151.17539854
+        }
+      },
+      {
+        "date": "2025-11",
+        "mmDev": 105.90610197484253,
+        "mmBiz": 9.644651820772575,
+        "mmTotal": 115.55075379561511,
+        "costDev": 31982158801.06834,
+        "costBiz": 2987418404.876214,
+        "costTotal": 35390081587.35339,
+        "costGI": 34969577205.94456,
+        "costBreakdown": {
+          "labor": 1009262297.1327674,
+          "marketing": 0,
+          "outsourcing": 52726549.16696575,
+          "depreciation": 69095533.24735183,
+          "server": 9001368.327675415,
+          "other": 81629185.70734385
+        }
+      },
+      {
+        "date": "2025-12",
+        "mmDev": 107.57854212709857,
+        "mmBiz": 9.856369480693626,
+        "mmTotal": 117.4349116077922,
+        "costDev": 33957824958.150574,
+        "costBiz": 3243488097.5182686,
+        "costTotal": 37599605973.04611,
+        "costGI": 37201313055.66884,
+        "costBreakdown": {
+          "labor": 1424154664.5311887,
+          "marketing": 0,
+          "outsourcing": 364987784.43119544,
+          "depreciation": 68912220.93317023,
+          "server": 8223369.038224298,
+          "other": 109388118.14845267
+        }
+      },
+      {
+        "date": "2026-01",
+        "mmDev": 99,
+        "mmBiz": 9.70566090378305,
+        "mmTotal": 108.70566090378306,
+        "costDev": 35397135377.43848,
+        "costBiz": 3472010722.550213,
+        "costTotal": 39201204055.67702,
+        "costGI": 38869146099.98869,
+        "costBreakdown": {
+          "labor": 1092353764.4948356,
+          "marketing": 0,
+          "outsourcing": 171253716.93163753,
+          "depreciation": 64787643.3781127,
+          "server": 9208328.02611716,
+          "other": 101706966.45719977
+        }
+      },
+      {
+        "date": "2026-02",
+        "mmDev": 102,
+        "mmBiz": 10.6157808805596,
+        "mmTotal": 112.6157808805596,
+        "costDev": 36755294587.95187,
+        "costBiz": 3703785726.9539666,
+        "costTotal": 40724996768.67756,
+        "costGI": 40459080314.90584,
+        "costBreakdown": {
+          "labor": 1006584776.4454004,
+          "marketing": 0,
+          "outsourcing": 171254026.67594066,
+          "depreciation": 66841927.57520531,
+          "server": 9147554.502684155,
+          "other": 104330925.31416945
+        }
+      },
+      {
+        "date": "2026-03",
+        "mmDev": 104,
+        "mmBiz": 11.4342806393465,
+        "mmTotal": 115.4342806393465,
+        "costDev": 38672721257.11299,
+        "costBiz": 3969479628.501108,
+        "costTotal": 42511684261.583145,
+        "costGI": 42642200885.6141,
+        "costBreakdown": {
+          "labor": 1259073701.5487447,
+          "marketing": 303000000,
+          "outsourcing": 171254362.23226905,
+          "depreciation": 68264778.6134291,
+          "server": 9379688.972257795,
+          "other": 106454137.79441494
+        }
+      },
+      {
+        "date": "2026-04",
+        "mmDev": 106,
+        "mmBiz": 12.2527803981334,
+        "mmTotal": 118.2527803981334,
+        "costDev": 40492316437.926346,
+        "costBiz": 4230850028.811594,
+        "costTotal": 44511961448.41749,
+        "costGI": 44723166466.73794,
+        "costBreakdown": {
+          "labor": 1450238373.3888943,
+          "marketing": 0,
+          "outsourcing": 171254725.7516248,
+          "depreciation": 69687629.6516529,
+          "server": 9548942.007178036,
+          "other": 118865510.01400232
+        }
+      },
+      {
+        "date": "2026-05",
+        "mmDev": 106,
+        "mmBiz": 12.888039720940998,
+        "mmTotal": 118.888039720941,
+        "costDev": 41907727766.02225,
+        "costBiz": 4487803509.308554,
+        "costTotal": 46105080654.78851,
+        "costGI": 46395531275.3308,
+        "costBreakdown": {
+          "labor": 1054615728.1631793,
+          "marketing": 0,
+          "outsourcing": 171255119.56426018,
+          "depreciation": 69847614.37213905,
+          "server": 9724392.157198789,
+          "other": 109968473.83912665
+        }
+      },
+      {
+        "date": "2026-06",
+        "mmDev": 109,
+        "mmBiz": 13.79815969771755,
+        "mmTotal": 122.79815969771755,
+        "costDev": 44071087586.71158,
+        "costBiz": 4783326218.815101,
+        "costTotal": 48003204381.97726,
+        "costGI": 48854413805.52668,
+        "costBreakdown": {
+          "labor": 1331717064.4605503,
+          "marketing": 450000000,
+          "outsourcing": 171255546.19461522,
+          "depreciation": 71901898.56923166,
+          "server": 9679620.513820125,
+          "other": 128805690.95111294
+        }
+      },
+      {
+        "date": "2026-07",
+        "mmDev": 110,
+        "mmBiz": 14.525039238514799,
+        "mmTotal": 124.5250392385148,
+        "costDev": 45669541415.95326,
+        "costBiz": 5069328163.054475,
+        "costTotal": 49793352617.612236,
+        "costGI": 50738869579.00774,
+        "costBreakdown": {
+          "labor": 1231783052.1438406,
+          "marketing": 0,
+          "outsourcing": 171256008.37749982,
+          "depreciation": 72693316.44858664,
+          "server": 9626669.816200905,
+          "other": 113094782.4555547
+        }
+      },
+      {
+        "date": "2026-08",
+        "mmDev": 113,
+        "mmBiz": 15.43515921529135,
+        "mmTotal": 128.43515921529135,
+        "costDev": 47171251800.79742,
+        "costBiz": 5357389441.290912,
+        "costTotal": 51490836608.48715,
+        "costGI": 52528641242.088326,
+        "costBreakdown": {
+          "labor": 1132000074.0374455,
+          "marketing": 0,
+          "outsourcing": 171256509.0756248,
+          "depreciation": 74747600.64567924,
+          "server": 9468184.436570844,
+          "other": 114238016.6488311
+        }
+      },
+      {
+        "date": "2026-09",
+        "mmDev": 114,
+        "mmBiz": 16.1620387560886,
+        "mmTotal": 130.1620387560886,
+        "costDev": 48997765365.37514,
+        "costBiz": 5679449008.472118,
+        "costTotal": 53461305004.59128,
+        "costGI": 54677214373.84726,
+        "costBreakdown": {
+          "labor": 1405039689.2392752,
+          "marketing": 50000000,
+          "outsourcing": 171257051.4985935,
+          "depreciation": 75539018.52503422,
+          "server": 9466138.821542468,
+          "other": 115211666.49327895
+        }
+      },
+      {
+        "date": "2026-10",
+        "mmDev": 115,
+        "mmBiz": 16.888918296885848,
+        "mmTotal": 131.88891829688583,
+        "costDev": 50669636769.7167,
+        "costBiz": 5993221168.644319,
+        "costTotal": 55338594350.35986,
+        "costGI": 56662857938.361015,
+        "costBreakdown": {
+          "labor": 1296629229.2655652,
+          "marketing": 0,
+          "outsourcing": 171257639.12347633,
+          "depreciation": 76330436.4043892,
+          "server": 9414304.041671215,
+          "other": 118239795.50645655
+        }
+      },
+      {
+        "date": "2026-11",
+        "mmDev": 115,
+        "mmBiz": 17.524177619693447,
+        "mmTotal": 132.52417761969343,
+        "costDev": 52207007779.34104,
+        "costBiz": 6302615010.090361,
+        "costTotal": 57079900375.46328,
+        "costGI": 58509622789.431404,
+        "costBreakdown": {
+          "labor": 1162369526.396499,
+          "marketing": 0,
+          "outsourcing": 171258275.71709934,
+          "depreciation": 76490421.12487537,
+          "server": 9324046.721761767,
+          "other": 117928739.66411014
+        }
+      },
+      {
+        "date": "2026-12",
+        "mmDev": 115,
+        "mmBiz": 18.159436942501046,
+        "mmTotal": 133.15943694250103,
+        "costDev": 54291099584.16535,
+        "costBiz": 6644317982.305236,
+        "costTotal": 59360048669.1027,
+        "costGI": 60935417566.47059,
+        "costBreakdown": {
+          "labor": 1708556938.2787356,
+          "marketing": 0,
+          "outsourcing": 171257106.73042148,
+          "depreciation": 76650405.84536153,
+          "server": 9350936.58793563,
+          "other": 118276417.38185638
+        }
+      },
+      {
+        "date": "2027-01",
+        "mmDev": 125,
+        "mmBiz": 18.75,
+        "mmTotal": 143.75,
+        "costDev": 56094284324.75796,
+        "costBiz": 6988618153.384489,
+        "costTotal": 61385141125.14523,
+        "costGI": 63082902478.14245,
+        "costBreakdown": {
+          "labor": 1413615481.793154,
+          "marketing": 0,
+          "outsourcing": 171255840.65608856,
+          "depreciation": 83124722.15453583,
+          "server": 9444900.550411573,
+          "other": 125743795.43841891
+        }
+      },
+      {
+        "date": "2027-02",
+        "mmDev": 125,
+        "mmBiz": 18.75,
+        "mmTotal": 143.75,
+        "costDev": 57751017517.84373,
+        "costBiz": 7321851078.286364,
+        "costTotal": 63256621806.220375,
+        "costGI": 65072868596.13009,
+        "costBreakdown": {
+          "labor": 1267196149.939737,
+          "marketing": 0,
+          "outsourcing": 171256017.63312614,
+          "depreciation": 83284706.875022,
+          "server": 9464614.927436108,
+          "other": 125531703.7104491
+        }
+      },
+      {
+        "date": "2027-03",
+        "mmDev": 125,
+        "mmBiz": 18.75,
+        "mmTotal": 143.75,
+        "costDev": 75894698347.51491,
+        "costBiz": 7683965310.993198,
+        "costTotal": 65397972258.76582,
+        "costGI": 83578663658.5081,
+        "costBreakdown": {
+          "labor": 1556211657.6168435,
+          "marketing": 15346784065.474342,
+          "outsourcing": 171256183.54622492,
+          "depreciation": 83284706.875022,
+          "server": 860567330.7742621,
+          "other": 125576885.38448024
+        }
+      }
+    ]
+  },
+  "Vindictus: Defying Fate": {
+    "kickoff": "2023-01",
+    "current": "2025-12",
+    "launch": "2027-03",
+    "rows": [
+      {
+        "date": "2023-01",
+        "mmDev": 37.35576923076923,
+        "mmBiz": 2.0245557261957,
+        "mmTotal": 39.380324956964934,
+        "costDev": 348357417.16619015,
+        "costBiz": 22514361.121841304,
+        "costTotal": 370871778.28803146,
+        "costGI": 370871778.28803146,
+        "costBreakdown": {
+          "labor": 307161336.6429112,
+          "marketing": 0,
+          "outsourcing": 442995.01469398563,
+          "depreciation": 18713238.454192467,
+          "server": 0,
+          "other": 22039847.05439252
+        }
+      },
+      {
+        "date": "2023-02",
+        "mmDev": 43.9414606741573,
+        "mmBiz": 2.498008967777348,
+        "mmTotal": 46.43946964193464,
+        "costDev": 798498230.0991644,
+        "costBiz": 47708549.169708446,
+        "costTotal": 846206779.2688729,
+        "costGI": 846206779.2688729,
+        "costBreakdown": {
+          "labor": 402464435.73505795,
+          "marketing": 0,
+          "outsourcing": 316878.00468164776,
+          "depreciation": 20433773.60084524,
+          "server": 0,
+          "other": 26925725.59238942
+        }
+      },
+      {
+        "date": "2023-03",
+        "mmDev": 56.618669986513126,
+        "mmBiz": 3.060116541620832,
+        "mmTotal": 59.678786528133955,
+        "costDev": 2169945054.7873726,
+        "costBiz": 94975812.19166175,
+        "costTotal": 2264920866.9790344,
+        "costGI": 2264920866.9790344,
+        "costBreakdown": {
+          "labor": 1304846160.7261372,
+          "marketing": 0,
+          "outsourcing": 391303.52987760695,
+          "depreciation": 28366388.370796584,
+          "server": 0,
+          "other": 37842972.06139662
+        }
+      },
+      {
+        "date": "2023-04",
+        "mmDev": 65.1056087375522,
+        "mmBiz": 3.5468188751871734,
+        "mmTotal": 68.65242761273937,
+        "costDev": 2918976409.4218016,
+        "costBiz": 137323302.495295,
+        "costTotal": 3056299711.9170966,
+        "costGI": 3056299711.9170966,
+        "costBreakdown": {
+          "labor": 676749499.9584893,
+          "marketing": 0,
+          "outsourcing": 447739.7261228137,
+          "depreciation": 32176193.82228227,
+          "server": 0,
+          "other": 39657921.12753457
+        }
+      },
+      {
+        "date": "2023-05",
+        "mmDev": 67.92667844522968,
+        "mmBiz": 4.435507802357641,
+        "mmTotal": 72.36218624758732,
+        "costDev": 3595192679.0777187,
+        "costBiz": 181811102.3358682,
+        "costTotal": 3777003781.413587,
+        "costGI": 3777003781.413587,
+        "costBreakdown": {
+          "labor": 604291583.3221915,
+          "marketing": 0,
+          "outsourcing": 467152.9238039839,
+          "depreciation": 34385237.589754865,
+          "server": 0,
+          "other": 37072295.82016671
+        }
+      },
+      {
+        "date": "2023-06",
+        "mmDev": 74.27538358090348,
+        "mmBiz": 4.412901662250308,
+        "mmTotal": 78.68828524315379,
+        "costDev": 4358377995.9142065,
+        "costBiz": 227629851.653981,
+        "costTotal": 4586007847.568188,
+        "costGI": 4586007847.568188,
+        "costBreakdown": {
+          "labor": 670884293.0961177,
+          "marketing": 0,
+          "outsourcing": 509271.58962781803,
+          "depreciation": 36937451.24767852,
+          "server": 26.432690879313633,
+          "other": 54854274.470373146
+        }
+      },
+      {
+        "date": "2023-07",
+        "mmDev": 79.43831700829674,
+        "mmBiz": 4.753695794128226,
+        "mmTotal": 84.19201280242495,
+        "costDev": 5209952278.385057,
+        "costBiz": 280533038.38840747,
+        "costTotal": 5490485316.773465,
+        "costGI": 5490485316.773465,
+        "costBreakdown": {
+          "labor": 760598985.0398713,
+          "marketing": 0,
+          "outsourcing": 5248486.624698368,
+          "depreciation": 41230225.23965945,
+          "server": 91.07119995651108,
+          "other": 44496494.495421715
+        }
+      },
+      {
+        "date": "2023-08",
+        "mmDev": 83.83749999999999,
+        "mmBiz": 5.102055343568325,
+        "mmTotal": 88.93955534356832,
+        "costDev": 6048755535.15946,
+        "costBiz": 332623774.31047136,
+        "costTotal": 6381379309.469932,
+        "costGI": 6381379309.469932,
+        "costBreakdown": {
+          "labor": 730885095.3917031,
+          "marketing": 0,
+          "outsourcing": 16652364.664051933,
+          "depreciation": 42595690.24698725,
+          "server": 37.81422626535442,
+          "other": 48670068.657434404
+        }
+      },
+      {
+        "date": "2023-09",
+        "mmDev": 91.65016858303795,
+        "mmBiz": 7.828258571154036,
+        "mmTotal": 99.47842715419199,
+        "costDev": 7504201216.466696,
+        "costBiz": 454039487.47287905,
+        "costTotal": 7958240703.939575,
+        "costGI": 7958240703.939575,
+        "costBreakdown": {
+          "labor": 1304155808.5536673,
+          "marketing": 0,
+          "outsourcing": 49730102.76091528,
+          "depreciation": 46494121.61122298,
+          "server": 38.73232028726604,
+          "other": 55065609.649109244
+        }
+      },
+      {
+        "date": "2023-10",
+        "mmDev": 94.71038620273265,
+        "mmBiz": 6.592480707289973,
+        "mmTotal": 101.30286691002263,
+        "costDev": 8564559043.538463,
+        "costBiz": 526156293.40682393,
+        "costTotal": 9090715336.945286,
+        "costGI": 9090715336.945286,
+        "costBreakdown": {
+          "labor": 868242429.7359465,
+          "marketing": 0,
+          "outsourcing": 101888993.63803446,
+          "depreciation": 36004143.08688529,
+          "server": 1051.6634299666803,
+          "other": 54221208.94747045
+        }
+      },
+      {
+        "date": "2023-11",
+        "mmDev": 98.78136871164233,
+        "mmBiz": 2.9151656673640796,
+        "mmTotal": 101.69653437900641,
+        "costDev": 9568006812.37541,
+        "costBiz": 557511118.6429778,
+        "costTotal": 10125517931.018389,
+        "costGI": 10125517931.018389,
+        "costBreakdown": {
+          "labor": 856765242.0021346,
+          "marketing": 0,
+          "outsourcing": 33108047.21418376,
+          "depreciation": 53542270.40451833,
+          "server": 48709.63501719994,
+          "other": 59983499.581093706
+        }
+      },
+      {
+        "date": "2023-12",
+        "mmDev": 107.28352097233856,
+        "mmBiz": 3.8359783889840364,
+        "mmTotal": 111.1194993613226,
+        "costDev": 10900688608.218605,
+        "costBiz": 603086720.1872737,
+        "costTotal": 11499133443.459156,
+        "costGI": 11503775328.405878,
+        "costBreakdown": {
+          "labor": 915120501.363177,
+          "marketing": 0,
+          "outsourcing": 259487529.61408466,
+          "depreciation": 59577597.239960834,
+          "server": 243001.61837607995,
+          "other": 98253166.00759716
+        }
+      },
+      {
+        "date": "2024-01",
+        "mmDev": 115.29965535634827,
+        "mmBiz": 2.383491295889055,
+        "mmTotal": 117.68314665223733,
+        "costDev": 12133780904.308784,
+        "costBiz": 628889650.5540448,
+        "costTotal": 12760474166.707834,
+        "costGI": 12762670554.86283,
+        "costBreakdown": {
+          "labor": 1048018477.2104628,
+          "marketing": 0,
+          "outsourcing": 75539385.71375011,
+          "depreciation": 62576081.52457905,
+          "server": 731951.5773211778,
+          "other": 46226400.064065896
+        }
+      },
+      {
+        "date": "2024-02",
+        "mmDev": 111.44314354450681,
+        "mmBiz": 6.133316412069883,
+        "mmTotal": 117.5764599565767,
+        "costDev": 13481236972.656809,
+        "costBiz": 693616411.6483569,
+        "costTotal": 14174466066.265604,
+        "costGI": 14174853384.305166,
+        "costBreakdown": {
+          "labor": 1188277289.6531699,
+          "marketing": 0,
+          "outsourcing": 23609569.844761062,
+          "depreciation": 61365733.62670452,
+          "server": 3902849.105029996,
+          "other": 70300626.11835924
+        }
+      },
+      {
+        "date": "2024-03",
+        "mmDev": 104.54742629155854,
+        "mmBiz": 7.854775155524555,
+        "mmTotal": 112.40220144708309,
+        "costDev": 14701753794.809435,
+        "costBiz": 819974938.0506921,
+        "costTotal": 15525452911.965515,
+        "costGI": 15521728732.860126,
+        "costBreakdown": {
+          "labor": 991522746.5954363,
+          "marketing": 13333628,
+          "outsourcing": 74054904.6911785,
+          "depreciation": 59338649.94689522,
+          "server": 6632353.560479818,
+          "other": 75634539.35863546
+        }
+      },
+      {
+        "date": "2024-04",
+        "mmDev": 101.8700616257293,
+        "mmBiz": 7.809174359029758,
+        "mmTotal": 109.67923598475906,
+        "costDev": 16140710873.995989,
+        "costBiz": 912018274.147716,
+        "costTotal": 17057575074.54928,
+        "costGI": 17052729148.143705,
+        "costBreakdown": {
+          "labor": 1153148819.1275291,
+          "marketing": 13458667.000000002,
+          "outsourcing": 148610740.48929897,
+          "depreciation": 56619318.79301283,
+          "server": 1230139.033692495,
+          "other": 65889394.74301997
+        }
+      },
+      {
+        "date": "2024-05",
+        "mmDev": 125.4879298245614,
+        "mmBiz": 11.859788329272806,
+        "mmTotal": 137.34771815383422,
+        "costDev": 17992636887.41134,
+        "costBiz": 1060924404.8371274,
+        "costTotal": 19060204351.53242,
+        "costGI": 19053561292.248466,
+        "costBreakdown": {
+          "labor": 1438382556.5994709,
+          "marketing": 0,
+          "outsourcing": 247396433.72090983,
+          "depreciation": 72449041.88457777,
+          "server": 1465566.5213648726,
+          "other": 92232414.6890279
+        }
+      },
+      {
+        "date": "2024-06",
+        "mmDev": 125.69831224210199,
+        "mmBiz": 11.497820185866647,
+        "mmTotal": 137.19613242796865,
+        "costDev": 19421983619.638176,
+        "costBiz": 1186333198.9729207,
+        "costTotal": 20617375829.755035,
+        "costGI": 20608316818.611095,
+        "costBreakdown": {
+          "labor": 1234000246.859114,
+          "marketing": 0,
+          "outsourcing": 12012214.8710251,
+          "depreciation": 71370862.84822366,
+          "server": 1830922.0447556572,
+          "other": 110132485.60371955
+        }
+      },
+      {
+        "date": "2024-07",
+        "mmDev": 134.10393139674383,
+        "mmBiz": 11.686518726885858,
+        "mmTotal": 145.79045012362968,
+        "costDev": 21153788324.2718,
+        "costBiz": 1321570456.5644999,
+        "costTotal": 22485852202.036503,
+        "costGI": 22475358780.8363,
+        "costBreakdown": {
+          "labor": 1437232640.6091075,
+          "marketing": 0,
+          "outsourcing": 115634684.6791287,
+          "depreciation": 80397028.22969931,
+          "server": 1769001.5506234288,
+          "other": 96771349.56506783
+        }
+      },
+      {
+        "date": "2024-08",
+        "mmDev": 134.94196298465033,
+        "mmBiz": 13.072134085656332,
+        "mmTotal": 148.01409707030666,
+        "costDev": 22743178433.119335,
+        "costBiz": 1487255001.573213,
+        "costTotal": 24243143693.17972,
+        "costGI": 24230433434.692547,
+        "costBreakdown": {
+          "labor": 1379058811.4717233,
+          "marketing": 0,
+          "outsourcing": 27105331.550919857,
+          "depreciation": 81032425.62821116,
+          "server": 1603880.0161592448,
+          "other": 100589660.18051927
+        }
+      },
+      {
+        "date": "2024-09",
+        "mmDev": 145.75911871279803,
+        "mmBiz": 3.9861959565548886,
+        "mmTotal": 149.74531466935292,
+        "costDev": 24650490869.10638,
+        "costBiz": 1538123050.0217123,
+        "costTotal": 26203195969.224613,
+        "costGI": 26188613919.128094,
+        "costBreakdown": {
+          "labor": 1645805327.3308072,
+          "marketing": 0,
+          "outsourcing": 48699557.747019924,
+          "depreciation": 87591713.40206055,
+          "server": 1749437.15876822,
+          "other": 123466400.34838958
+        }
+      },
+      {
+        "date": "2024-10",
+        "mmDev": 151.9687243473173,
+        "mmBiz": 10.067051638374288,
+        "mmTotal": 162.0357759856916,
+        "costDev": 26531043900.53991,
+        "costBiz": 1659233339.1523876,
+        "costTotal": 28206788857.536156,
+        "costGI": 28190277239.6923,
+        "costBreakdown": {
+          "labor": 1508071596.2259555,
+          "marketing": 2609324,
+          "outsourcing": 167947384.80831334,
+          "depreciation": 95369778.37791625,
+          "server": 1911391.2855076427,
+          "other": 104643556.73583686
+        }
+      },
+      {
+        "date": "2024-11",
+        "mmDev": 158.54895815424356,
+        "mmBiz": 8.397836409461371,
+        "mmTotal": 166.94679456370494,
+        "costDev": 28356834780.82106,
+        "costBiz": 1758018655.1621447,
+        "costTotal": 30133636083.794113,
+        "costGI": 30114853435.983204,
+        "costBreakdown": {
+          "labor": 1526106537.4079485,
+          "marketing": 0,
+          "outsourcing": 81900424.48404525,
+          "depreciation": 101959198.94989553,
+          "server": 2121454.020292051,
+          "other": 113703265.4189681
+        }
+      },
+      {
+        "date": "2024-12",
+        "mmDev": 161.88499272518268,
+        "mmBiz": 8.164257950563874,
+        "mmTotal": 170.04925067574655,
+        "costDev": 29003127282.01949,
+        "costBiz": 1818847079.110899,
+        "costTotal": 30840119537.74685,
+        "costGI": 30821974361.130386,
+        "costBreakdown": {
+          "labor": 282181655.3640898,
+          "marketing": 0,
+          "outsourcing": 69095324.80862458,
+          "depreciation": 103506368.41799808,
+          "server": 1506390.3253172557,
+          "other": 190002762.28240064
+        }
+      },
+      {
+        "date": "2025-01",
+        "mmDev": 174.3929667216495,
+        "mmBiz": 9.664742299605223,
+        "mmTotal": 184.0577090212547,
+        "costDev": 31184209253.86581,
+        "costBiz": 1926286349.619064,
+        "costTotal": 33130519286.07738,
+        "costGI": 33110495603.484875,
+        "costBreakdown": {
+          "labor": 1755801123.5858932,
+          "marketing": 0,
+          "outsourcing": 235883413.76534867,
+          "depreciation": 110081000.60917413,
+          "server": 2110923.462601085,
+          "other": 77205510.42330264
+        }
+      },
+      {
+        "date": "2025-02",
+        "mmDev": 184.06186053154752,
+        "mmBiz": 16.964952800863625,
+        "mmTotal": 201.02681333241114,
+        "costDev": 33435416641.17695,
+        "costBiz": 2113119111.6300783,
+        "costTotal": 35572565504.13349,
+        "costGI": 35548535752.80703,
+        "costBreakdown": {
+          "labor": 1767304269.2926533,
+          "marketing": 7256245,
+          "outsourcing": 229223599.59281358,
+          "depreciation": 110899874.14631742,
+          "server": 3189445.0147699136,
+          "other": 133333954.2645826
+        }
+      },
+      {
+        "date": "2025-03",
+        "mmDev": 194.16505356966636,
+        "mmBiz": 15.54771956299192,
+        "mmTotal": 209.71277313265827,
+        "costDev": 35523645286.22045,
+        "costBiz": 2305964271.6078935,
+        "costTotal": 37857894984.76017,
+        "costGI": 37829609557.82835,
+        "costBreakdown": {
+          "labor": 1522271315.0225863,
+          "marketing": 0,
+          "outsourcing": 279560952.07353944,
+          "depreciation": 124145983.55378996,
+          "server": 5160051.238947223,
+          "other": 157090343.1546382
+        }
+      },
+      {
+        "date": "2025-04",
+        "mmDev": 193.54813330892836,
+        "mmBiz": 19.96724953742223,
+        "mmTotal": 213.51538284635058,
+        "costDev": 38166412522.205414,
+        "costBiz": 2692454245.2240734,
+        "costTotal": 40889478713.78256,
+        "costGI": 40858866767.42949,
+        "costBreakdown": {
+          "labor": 1968962867.6246378,
+          "marketing": 6860969,
+          "outsourcing": 374636430.9007,
+          "depreciation": 123482516.8855899,
+          "server": 4705781.15152094,
+          "other": 164118670.42251286
+        }
+      },
+      {
+        "date": "2025-05",
+        "mmDev": 194.8224392284143,
+        "mmBiz": 21.099436321983617,
+        "mmTotal": 215.92187555039794,
+        "costDev": 40600890511.6682,
+        "costBiz": 2941340166.699625,
+        "costTotal": 43578020137.54076,
+        "costGI": 43542230678.36782,
+        "costBreakdown": {
+          "labor": 1931213147.2447133,
+          "marketing": 86100178.00000001,
+          "outsourcing": 107119196.36827517,
+          "depreciation": 125498952.27606656,
+          "server": 24207562.06565944,
+          "other": 160338953.5080673
+        }
+      },
+      {
+        "date": "2025-06",
+        "mmDev": 190.8926255807495,
+        "mmBiz": 23.16729800805384,
+        "mmTotal": 214.05992358880334,
+        "costDev": 43487459168.01848,
+        "costBiz": 3211502990.480919,
+        "costTotal": 46731930862.14836,
+        "costGI": 46698962158.4994,
+        "costBreakdown": {
+          "labor": 1766995614.6631005,
+          "marketing": 507612331,
+          "outsourcing": 241268231.54699358,
+          "depreciation": 167598111.75866115,
+          "server": 34308924.76602039,
+          "other": 168785442.61550748
+        }
+      },
+      {
+        "date": "2025-07",
+        "mmDev": 189.70030429745046,
+        "mmBiz": 19.368508981475415,
+        "mmTotal": 209.06881327892586,
+        "costDev": 46495448154.356316,
+        "costBiz": 3460459933.057168,
+        "costTotal": 49991824876.487114,
+        "costGI": 49955908087.41348,
+        "costBreakdown": {
+          "labor": 2184087058.9234986,
+          "marketing": 316946127,
+          "outsourcing": 229204728.76441196,
+          "depreciation": 128613913.71982965,
+          "server": 4030359.506169173,
+          "other": 145106798.42392614
+        }
+      },
+      {
+        "date": "2025-08",
+        "mmDev": 189.07279803769302,
+        "mmBiz": 19.595474502311426,
+        "mmTotal": 208.66827254000444,
+        "costDev": 48871817183.470894,
+        "costBiz": 3698576486.132532,
+        "costTotal": 52611624794.65104,
+        "costGI": 52570393669.603424,
+        "costBreakdown": {
+          "labor": 1787620761.9841535,
+          "marketing": 0,
+          "outsourcing": 305181545.73000836,
+          "depreciation": 123410995.38174477,
+          "server": 4584204.322185594,
+          "other": 155571521.69648436
+        }
+      },
+      {
+        "date": "2025-09",
+        "mmDev": 194.78127380708779,
+        "mmBiz": 16.275905893827115,
+        "mmTotal": 211.0571797009149,
+        "costDev": 51516197236.509705,
+        "costBiz": 3918137295.17569,
+        "costTotal": 55475852861.736664,
+        "costGI": 55434334531.685394,
+        "costBreakdown": {
+          "labor": 2157832338.8970537,
+          "marketing": 0,
+          "outsourcing": 210958367.3938125,
+          "depreciation": 122805101.82739228,
+          "server": 5673417.877417264,
+          "other": 147110827.04313797
+        }
+      },
+      {
+        "date": "2025-10",
+        "mmDev": 198.1917833332717,
+        "mmBiz": 16.115501472777108,
+        "mmTotal": 214.3072848060488,
+        "costDev": 53932012231.6387,
+        "costBiz": 4113725917.241853,
+        "costTotal": 58087832682.086296,
+        "costGI": 58045738148.880554,
+        "costBreakdown": {
+          "labor": 1953102496.3504581,
+          "marketing": 3921580,
+          "outsourcing": 159364236.7378918,
+          "depreciation": 134077814.74763736,
+          "server": 5295661.036390442,
+          "other": 160053206.25662294
+        }
+      },
+      {
+        "date": "2025-11",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 17.23858802031823,
+        "mmTotal": 217.55097430178333,
+        "costDev": 56193816947.90309,
+        "costBiz": 4304914253.531271,
+        "costTotal": 60540575219.76867,
+        "costGI": 60498731201.434364,
+        "costBreakdown": {
+          "labor": 1763208344.0262535,
+          "marketing": 0,
+          "outsourcing": 213454369.5819021,
+          "depreciation": 127996197.04476082,
+          "server": 4342046.005619593,
+          "other": 152803759.6058557
+        }
+      },
+      {
+        "date": "2025-12",
+        "mmDev": 198.37503027729068,
+        "mmBiz": 17.722921577379488,
+        "mmTotal": 216.09795185467016,
+        "costDev": 59196554420.79619,
+        "costBiz": 4516751391.553144,
+        "costTotal": 63752112541.1731,
+        "costGI": 63713305812.349335,
+        "costBreakdown": {
+          "labor": 2310419656.535791,
+          "marketing": 10816458,
+          "outsourcing": 335751100.89993906,
+          "depreciation": 125772647.16631794,
+          "server": 4516150.297151345,
+          "other": 215461459.99389568
+        }
+      },
+      {
+        "date": "2026-01",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 18.77628707289488,
+        "mmTotal": 219.08867335436,
+        "costDev": 61868803406.091385,
+        "costBiz": 4758738657.26209,
+        "costTotal": 66573110758.57261,
+        "costGI": 66627542063.35348,
+        "costBreakdown": {
+          "labor": 2072093051.540143,
+          "marketing": 55000000,
+          "outsourcing": 195409587.48527122,
+          "depreciation": 125289512.9220525,
+          "server": 8507672.478704367,
+          "other": 215949160.86902288
+        }
+      },
+      {
+        "date": "2026-02",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 19.656568241812046,
+        "mmTotal": 219.96895452327715,
+        "costDev": 64351792173.5796,
+        "costBiz": 4987485947.92547,
+        "costTotal": 69187268310.89745,
+        "costGI": 69339278121.50507,
+        "costBreakdown": {
+          "labor": 1819160062.916175,
+          "marketing": 55000000,
+          "outsourcing": 257179851.6090438,
+          "depreciation": 125655526.22952294,
+          "server": 9040734.896712972,
+          "other": 216952591.8367576
+        }
+      },
+      {
+        "date": "2026-03",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 20.536849410729207,
+        "mmTotal": 220.84923569219433,
+        "costDev": 67088861171.512886,
+        "costBiz": 5227031380.290042,
+        "costTotal": 72051507944.32574,
+        "costGI": 72315892551.80293,
+        "costBreakdown": {
+          "labor": 2086093884.4259863,
+          "marketing": 60000000,
+          "outsourcing": 236938990.57646412,
+          "depreciation": 126021539.53699335,
+          "server": 9528342.386874894,
+          "other": 218486241.00696763
+        }
+      },
+      {
+        "date": "2026-04",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 21.417130579646372,
+        "mmTotal": 221.72951686111148,
+        "costDev": 72057873048.18747,
+        "costBiz": 5493714008.335141,
+        "costTotal": 75041559494.05354,
+        "costGI": 77551587056.52261,
+        "costBreakdown": {
+          "labor": 2091447575.5289474,
+          "marketing": 2184000000,
+          "outsourcing": 319699266.20783615,
+          "depreciation": 126387552.84446377,
+          "server": 9892369.315868868,
+          "other": 237585112.7774747
+        }
+      },
+      {
+        "date": "2026-05",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 22.297411748563533,
+        "mmTotal": 222.60979803002863,
+        "costDev": 76247445179.63406,
+        "costBiz": 5745880243.151104,
+        "costTotal": 78131862446.44884,
+        "costGI": 81993325422.78517,
+        "costBreakdown": {
+          "labor": 1836957269.3400228,
+          "marketing": 1287000000,
+          "outsourcing": 704563473.0387164,
+          "depreciation": 126753566.15193419,
+          "server": 10324664.16289786,
+          "other": 223973158.75301754
+        }
+      },
+      {
+        "date": "2026-06",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 23.177692917480698,
+        "mmTotal": 223.4900791989458,
+        "costDev": 79746901498.00409,
+        "costBiz": 6011386622.099282,
+        "costTotal": 81074987281.8579,
+        "costGI": 85758288120.10338,
+        "costBreakdown": {
+          "labor": 2104952675.8537693,
+          "marketing": 746600000,
+          "outsourcing": 257478224.35675398,
+          "depreciation": 127119579.4594046,
+          "server": 9167864.754334396,
+          "other": 254137973.94576877
+        }
+      },
+      {
+        "date": "2026-07",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 24.05797408639786,
+        "mmTotal": 224.37036036786296,
+        "costDev": 84303349157.38568,
+        "costBiz": 6299776943.130871,
+        "costTotal": 83972155260.2805,
+        "costGI": 90603126100.51656,
+        "costBreakdown": {
+          "labor": 2110802099.5177512,
+          "marketing": 1863000000,
+          "outsourcing": 224566007.5715205,
+          "depreciation": 127485592.76687501,
+          "server": 7073020.753360563,
+          "other": 223520938.77207625
+        }
+      },
+      {
+        "date": "2026-08",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 24.938255255315024,
+        "mmTotal": 225.25064153678014,
+        "costDev": 87597456063.57024,
+        "costBiz": 6574569532.269093,
+        "costTotal": 87199203543.99178,
+        "costGI": 94172025595.83932,
+        "costBreakdown": {
+          "labor": 1854754475.7638707,
+          "marketing": 256000000,
+          "outsourcing": 823813413.1191472,
+          "depreciation": 127851606.07434544,
+          "server": 7327985.60729318,
+          "other": 224359425.61989966
+        }
+      },
+      {
+        "date": "2026-09",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 25.818536424232185,
+        "mmTotal": 226.1309227056973,
+        "costDev": 90254987322.9276,
+        "costBiz": 6860014158.862186,
+        "costTotal": 89994637417.06139,
+        "costGI": 97115001481.78978,
+        "costBreakdown": {
+          "labor": 2123811467.2815523,
+          "marketing": 50000000,
+          "outsourcing": 122861145.29574282,
+          "depreciation": 128217619.38181585,
+          "server": 7556926.464385479,
+          "other": 225084100.93385768
+        }
+      },
+      {
+        "date": "2026-10",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 26.69881759314935,
+        "mmTotal": 227.01120387461447,
+        "costDev": 96909944752.20229,
+        "costBiz": 7171622020.7006035,
+        "costTotal": 93036176379.87628,
+        "costGI": 104081566772.9029,
+        "costBreakdown": {
+          "labor": 2130156623.506555,
+          "marketing": 3818000000,
+          "outsourcing": 341490920.6537214,
+          "depreciation": 128583632.68928626,
+          "server": 7714088.929966163,
+          "other": 229012163.4951605
+        }
+      },
+      {
+        "date": "2026-11",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 27.57909876206651,
+        "mmTotal": 227.89148504353162,
+        "costDev": 101091062262.14526,
+        "costBiz": 7470050849.686129,
+        "costTotal": 96308959832.5218,
+        "costGI": 108561113111.83139,
+        "costBreakdown": {
+          "labor": 1872551682.1877189,
+          "marketing": 1100000000,
+          "outsourcing": 842906667.8803705,
+          "depreciation": 128949645.9967567,
+          "server": 7915747.58776414,
+          "other": 228793766.29036194
+        }
+      },
+      {
+        "date": "2026-12",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 28.459379930983673,
+        "mmTotal": 228.77176621244877,
+        "costDev": 105892123199.98705,
+        "costBiz": 7779392446.393644,
+        "costTotal": 99274371230.97324,
+        "costGI": 113671515646.38069,
+        "costBreakdown": {
+          "labor": 2142670258.7093353,
+          "marketing": 2025400000,
+          "outsourcing": 266390469.7234928,
+          "depreciation": 129315659.30422711,
+          "server": 8213675.96960952,
+          "other": 229070874.13511854
+        }
+      },
+      {
+        "date": "2027-01",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 29.339661099900837,
+        "mmTotal": 229.65204738136595,
+        "costDev": 109034478435.32393,
+        "costBiz": 8114540728.528933,
+        "costTotal": 102620570470.53516,
+        "costGI": 117149019163.85286,
+        "costBreakdown": {
+          "labor": 2337840043.4724097,
+          "marketing": 0,
+          "outsourcing": 437448867.54317343,
+          "depreciation": 129681672.61169752,
+          "server": 8521924.442314366,
+          "other": 228862727.26728836
+        }
+      },
+      {
+        "date": "2027-02",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 30.046857942219766,
+        "mmTotal": 230.35924422368487,
+        "costDev": 111990452385.80585,
+        "costBiz": 8434879038.523283,
+        "costTotal": 105767398689.0562,
+        "costGI": 120425331424.32913,
+        "costBreakdown": {
+          "labor": 2115255095.4206195,
+          "marketing": 0,
+          "outsourcing": 472905048.33966523,
+          "depreciation": 130047685.91916797,
+          "server": 8523112.105948534,
+          "other": 229243008.69652057
+        }
+      },
+      {
+        "date": "2027-03",
+        "mmDev": 200.3123862814651,
+        "mmBiz": 30.046857942219766,
+        "mmTotal": 230.35924422368487,
+        "costDev": 143096499919.71564,
+        "costBiz": 8758191769.41722,
+        "costTotal": 108883818753.99078,
+        "costGI": 151854691689.13284,
+        "costBreakdown": {
+          "labor": 2155242786.327857,
+          "marketing": 26680937176.39259,
+          "outsourcing": 414374771.87971705,
+          "depreciation": 130047685.91916797,
+          "server": 1496127318.3023882,
+          "other": 229317795.0880627
+        }
+      }
+    ]
+  },
+  "Project EL": {
+    "kickoff": "2024-11",
+    "current": "2025-12",
+    "launch": "2028-04",
+    "rows": [
+      {
+        "date": "2024-11",
+        "mmDev": 60.22807692307693,
+        "mmBiz": 0,
+        "mmTotal": 60.22807692307693,
+        "costDev": 727756167.0877042,
+        "costBiz": 0,
+        "costTotal": 727756167.0877042,
+        "costGI": 727756167.0877042,
+        "costBreakdown": {
+          "labor": 629180787.8551207,
+          "marketing": 0,
+          "outsourcing": 8547064.54401842,
+          "depreciation": 39157023.77182381,
+          "server": 19297.28402977683,
+          "other": 50851993.632711604
+        }
+      },
+      {
+        "date": "2024-12",
+        "mmDev": 69.24,
+        "mmBiz": 0,
+        "mmTotal": 69.24,
+        "costDev": 1936679067.6774125,
+        "costBiz": 0,
+        "costTotal": 1936679067.6774125,
+        "costGI": 1936679067.6774125,
+        "costBreakdown": {
+          "labor": 1071446743.0112944,
+          "marketing": 0,
+          "outsourcing": 716578.1987678439,
+          "depreciation": 44451106.46607697,
+          "server": 1983337.8617412401,
+          "other": 90325135.05182758
+        }
+      },
+      {
+        "date": "2025-01",
+        "mmDev": 69.53999999999999,
+        "mmBiz": 0,
+        "mmTotal": 69.53999999999999,
+        "costDev": 2763476961.05474,
+        "costBiz": 0,
+        "costTotal": 2763476961.05474,
+        "costGI": 2763476961.05474,
+        "costBreakdown": {
+          "labor": 743904403.5284994,
+          "marketing": 0,
+          "outsourcing": 656402.1603556433,
+          "depreciation": 43424319.95915067,
+          "server": 0.3461632877588272,
+          "other": 38812767.383158624
+        }
+      },
+      {
+        "date": "2025-02",
+        "mmDev": 78.54,
+        "mmBiz": 0,
+        "mmTotal": 78.54,
+        "costDev": 3695043324.7567153,
+        "costBiz": 0,
+        "costTotal": 3695043324.7567153,
+        "costGI": 3695043324.7567153,
+        "costBreakdown": {
+          "labor": 822309852.6928462,
+          "marketing": 0,
+          "outsourcing": 741354.9852506793,
+          "depreciation": 46856544.06547296,
+          "server": 3645406.1146326372,
+          "other": 58013205.843772784
+        }
+      },
+      {
+        "date": "2025-03",
+        "mmDev": 80.13,
+        "mmBiz": 0,
+        "mmTotal": 80.13,
+        "costDev": 4803292192.859093,
+        "costBiz": 0,
+        "costTotal": 4803292192.859093,
+        "costGI": 4803292192.859093,
+        "costBreakdown": {
+          "labor": 987646638.9833167,
+          "marketing": 0,
+          "outsourcing": 756924.1406722689,
+          "depreciation": 51135690.814830005,
+          "server": 5397376.773657074,
+          "other": 63312237.38990093
+        }
+      },
+      {
+        "date": "2025-04",
+        "mmDev": 85.07000000000001,
+        "mmBiz": 0,
+        "mmTotal": 85.07000000000001,
+        "costDev": 6059338045.631216,
+        "costBiz": 0,
+        "costTotal": 6065277983.631216,
+        "costGI": 6059338045.631216,
+        "costBreakdown": {
+          "labor": 1121540578.5777142,
+          "marketing": 0,
+          "outsourcing": 802199.8151986226,
+          "depreciation": 54399897.93935542,
+          "server": 5189489.633054037,
+          "other": 74113686.8068014
+        }
+      },
+      {
+        "date": "2025-05",
+        "mmDev": 91.91,
+        "mmBiz": 0,
+        "mmTotal": 91.91,
+        "costDev": 7297093328.952505,
+        "costBiz": 0,
+        "costTotal": 7307464007.952505,
+        "costGI": 7297093328.952505,
+        "costBreakdown": {
+          "labor": 1075422714.9113448,
+          "marketing": 0,
+          "outsourcing": 20981665.396470588,
+          "depreciation": 58885405.35717544,
+          "server": 6055430.492134167,
+          "other": 76410067.16416395
+        }
+      },
+      {
+        "date": "2025-06",
+        "mmDev": 95.08055231710871,
+        "mmBiz": 0,
+        "mmTotal": 95.08055231710871,
+        "costDev": 8544663706.963497,
+        "costBiz": 0,
+        "costTotal": 8555034385.963497,
+        "costGI": 8544663706.963497,
+        "costBreakdown": {
+          "labor": 1045981697.0577891,
+          "marketing": 0,
+          "outsourcing": 16648877.995498171,
+          "depreciation": 83606844.12594925,
+          "server": 6104885.958408937,
+          "other": 95228072.87334669
+        }
+      },
+      {
+        "date": "2025-07",
+        "mmDev": 98.52505250114353,
+        "mmBiz": 0,
+        "mmTotal": 98.52505250114353,
+        "costDev": 9933825205.926489,
+        "costBiz": 0,
+        "costTotal": 9945674304.138823,
+        "costGI": 9933825205.926489,
+        "costBreakdown": {
+          "labor": 1210165640.0277827,
+          "marketing": 0,
+          "outsourcing": 7629289.995359442,
+          "depreciation": 68297142.2706755,
+          "server": 4168400.0222542225,
+          "other": 98901026.64692059
+        }
+      },
+      {
+        "date": "2025-08",
+        "mmDev": 105.24537674394486,
+        "mmBiz": 2.0671665266985824,
+        "mmTotal": 107.31254327064345,
+        "costDev": 11475276385.724998,
+        "costBiz": 25410172.369403757,
+        "costTotal": 11515192824.293726,
+        "costGI": 11500686558.094402,
+        "costBreakdown": {
+          "labor": 1278172204.822372,
+          "marketing": 0,
+          "outsourcing": 93473681.37840341,
+          "depreciation": 70447541.67027238,
+          "server": 4196054.503870924,
+          "other": 95161697.42358989
+        }
+      },
+      {
+        "date": "2025-09",
+        "mmDev": 112.53677006620434,
+        "mmBiz": 2.554388051726283,
+        "mmTotal": 115.09115811793062,
+        "costDev": 13352843630.307823,
+        "costBiz": 56267546.53341291,
+        "costTotal": 13423617443.04056,
+        "costGI": 13409111176.841236,
+        "costBreakdown": {
+          "labor": 1535045451.235583,
+          "marketing": 0,
+          "outsourcing": 166998972.22109193,
+          "depreciation": 72458085.53931083,
+          "server": 4656197.033930115,
+          "other": 98408538.5529088
+        }
+      },
+      {
+        "date": "2025-10",
+        "mmDev": 112.79705012681264,
+        "mmBiz": 2.2053854855317137,
+        "mmTotal": 115.00243561234434,
+        "costDev": 14916515506.618507,
+        "costBiz": 79614269.33820492,
+        "costTotal": 15012253480.34898,
+        "costGI": 14996129775.956713,
+        "costBreakdown": {
+          "labor": 1354275594.4656396,
+          "marketing": 0,
+          "outsourcing": 22078347.32724926,
+          "depreciation": 78870015.1148188,
+          "server": 8156831.8440659195,
+          "other": 100291087.5589113
+        }
+      },
+      {
+        "date": "2025-11",
+        "mmDev": 114.76369860275061,
+        "mmBiz": 1.002527595818815,
+        "mmTotal": 115.76622619856943,
+        "costDev": 16337170190.75845,
+        "costBiz": 89167696.96419927,
+        "costTotal": 16454249395.66278,
+        "costGI": 16426337887.722649,
+        "costBreakdown": {
+          "labor": 1203460777.9837415,
+          "marketing": 0,
+          "outsourcing": 34487848.921198696,
+          "depreciation": 76730551.48191568,
+          "server": 6300059.893503285,
+          "other": 99675445.859584
+        }
+      },
+      {
+        "date": "2025-12",
+        "mmDev": 117.20933964910994,
+        "mmBiz": 0,
+        "mmTotal": 117.20933964910994,
+        "costDev": 18714302160.63077,
+        "costBiz": 89167696.96419927,
+        "costTotal": 18823128485.76993,
+        "costGI": 18803469857.59497,
+        "costBreakdown": {
+          "labor": 1666132541.4658844,
+          "marketing": 0,
+          "outsourcing": 490093497.261572,
+          "depreciation": 87077907.42819706,
+          "server": 6122827.095846239,
+          "other": 127705196.62082353
+        }
+      },
+      {
+        "date": "2026-01",
+        "mmDev": 121,
+        "mmBiz": 1.1111111111111112,
+        "mmTotal": 122.11111111111111,
+        "costDev": 20677860763.64179,
+        "costBiz": 99392153.95640506,
+        "costTotal": 20733499535.131226,
+        "costGI": 20777252917.598194,
+        "costBreakdown": {
+          "labor": 1541904177.9699726,
+          "marketing": 0,
+          "outsourcing": 203760000,
+          "depreciation": 90388517.89099777,
+          "server": 4999413.309293403,
+          "other": 122506493.84075108
+        }
+      },
+      {
+        "date": "2026-02",
+        "mmDev": 121,
+        "mmBiz": 2.2222222222222223,
+        "mmTotal": 123.22222222222223,
+        "costDev": 22442330094.749718,
+        "costBiz": 119493255.87132429,
+        "costTotal": 22453220759.989403,
+        "costGI": 22561823350.62104,
+        "costBreakdown": {
+          "labor": 1341627824.905559,
+          "marketing": 0,
+          "outsourcing": 203760000,
+          "depreciation": 90442036.05986565,
+          "server": 5416031.056220913,
+          "other": 123223439.08628401
+        }
+      },
+      {
+        "date": "2026-03",
+        "mmDev": 121,
+        "mmBiz": 3.3333333333333335,
+        "mmTotal": 124.33333333333333,
+        "costDev": 24495405718.41095,
+        "costBiz": 149473637.64887735,
+        "costTotal": 24453667066.066082,
+        "costGI": 24644879356.059826,
+        "costBreakdown": {
+          "labor": 1560944110.4654803,
+          "marketing": 0,
+          "outsourcing": 271680000,
+          "depreciation": 90495554.22873352,
+          "server": 5563583.134686603,
+          "other": 124392375.83233267
+        }
+      },
+      {
+        "date": "2026-04",
+        "mmDev": 125,
+        "mmBiz": 4.444444444444445,
+        "mmTotal": 129.44444444444446,
+        "costDev": 26610018787.59699,
+        "costBiz": 189336153.8073114,
+        "costTotal": 26533481530.03731,
+        "costGI": 26799354941.4043,
+        "costBreakdown": {
+          "labor": 1601676646.052702,
+          "marketing": 0,
+          "outsourcing": 271680000,
+          "depreciation": 93507054.30120578,
+          "server": 5577433.664772396,
+          "other": 142171935.1673578
+        }
+      },
+      {
+        "date": "2026-05",
+        "mmDev": 125,
+        "mmBiz": 5.555555555555555,
+        "mmTotal": 130.55555555555554,
+        "costDev": 28507474456.071365,
+        "costBiz": 239083896.74139404,
+        "costTotal": 28404971986.605095,
+        "costGI": 28746558352.81276,
+        "costBreakdown": {
+          "labor": 1395191598.1699862,
+          "marketing": 0,
+          "outsourcing": 271680000,
+          "depreciation": 93560572.47007367,
+          "server": 5609762.33408226,
+          "other": 131413735.50023559
+        }
+      },
+      {
+        "date": "2026-06",
+        "mmDev": 125,
+        "mmBiz": 6.666666666666666,
+        "mmTotal": 131.66666666666666,
+        "costDev": 30653190381.275562,
+        "costBiz": 298720216.545457,
+        "costTotal": 30514607003.035854,
+        "costGI": 30951910597.82102,
+        "costBreakdown": {
+          "labor": 1624591013.1706314,
+          "marketing": 0,
+          "outsourcing": 271680000,
+          "depreciation": 93614090.63894156,
+          "server": 5572623.320911269,
+          "other": 150258198.0737136
+        }
+      },
+      {
+        "date": "2026-07",
+        "mmDev": 127,
+        "mmBiz": 7.777777777777777,
+        "mmTotal": 134.77777777777777,
+        "costDev": 32727560316.683395,
+        "costBiz": 368248742.4883596,
+        "costTotal": 32572280734.173687,
+        "costGI": 33095809059.171757,
+        "costBreakdown": {
+          "labor": 1636397419.1066022,
+          "marketing": 0,
+          "outsourcing": 203760000,
+          "depreciation": 95146599.7596116,
+          "server": 5528268.101119796,
+          "other": 133537648.440501
+        }
+      },
+      {
+        "date": "2026-08",
+        "mmDev": 127,
+        "mmBiz": 8.888888888888888,
+        "mmTotal": 135.88888888888889,
+        "costDev": 35001197528.9314,
+        "costBiz": 447673406.2780326,
+        "costTotal": 34338480861.054794,
+        "costGI": 35448870935.20943,
+        "costBreakdown": {
+          "labor": 1426424016.617032,
+          "marketing": 500000000,
+          "outsourcing": 113200000,
+          "depreciation": 95200117.9284795,
+          "server": 5641590.441025261,
+          "other": 133171487.26146472
+        }
+      },
+      {
+        "date": "2026-09",
+        "mmDev": 127,
+        "mmBiz": 9.999999999999998,
+        "mmTotal": 137,
+        "costDev": 37009105271.56179,
+        "costBiz": 536718856.28226113,
+        "costTotal": 36326626124.99922,
+        "costGI": 37545824127.844055,
+        "costBreakdown": {
+          "labor": 1661388074.7234948,
+          "marketing": 0,
+          "outsourcing": 113200000,
+          "depreciation": 95253636.09734738,
+          "server": 5762051.769121456,
+          "other": 132303980.04042864
+        }
+      },
+      {
+        "date": "2026-10",
+        "mmDev": 129,
+        "mmBiz": 11.111111111111109,
+        "mmTotal": 140.11111111111111,
+        "costDev": 39533267021.91176,
+        "costBiz": 635614395.807649,
+        "costTotal": 38352211164.32997,
+        "costGI": 40168881417.719406,
+        "costBreakdown": {
+          "labor": 1671943754.439651,
+          "marketing": 500000000,
+          "outsourcing": 113200000,
+          "depreciation": 96786145.21801744,
+          "server": 5854206.3303873995,
+          "other": 136377644.36191142
+        }
+      },
+      {
+        "date": "2026-11",
+        "mmDev": 129,
+        "mmBiz": 12.22222222222222,
+        "mmTotal": 141.22222222222223,
+        "costDev": 41842197894.34078,
+        "costBiz": 744350246.5833057,
+        "costTotal": 40172300251.81974,
+        "costGI": 42586548140.92409,
+        "costBreakdown": {
+          "labor": 1458293366.5821612,
+          "marketing": 500000000,
+          "outsourcing": 113200000,
+          "depreciation": 96839663.38688533,
+          "server": 5662320.87091419,
+          "other": 134935521.58906358
+        }
+      },
+      {
+        "date": "2026-12",
+        "mmDev": 129,
+        "mmBiz": 13.33333333333333,
+        "mmTotal": 142.33333333333334,
+        "costDev": 43891107357.55344,
+        "costBiz": 862941459.0687444,
+        "costTotal": 42217839806.69918,
+        "costGI": 44754048816.62218,
+        "costBreakdown": {
+          "labor": 1698779537.0623157,
+          "marketing": 0,
+          "outsourcing": 113200000,
+          "depreciation": 96893181.5557532,
+          "server": 5609175.952365098,
+          "other": 134427568.6422239
+        }
+      },
+      {
+        "date": "2027-01",
+        "mmDev": 170,
+        "mmBiz": 14.444444444444441,
+        "mmTotal": 184.44444444444443,
+        "costDev": 46785407141.511375,
+        "costBiz": 991415272.5946363,
+        "costTotal": 45132253960.69414,
+        "costGI": 47776822414.10601,
+        "costBreakdown": {
+          "labor": 2184120413.418223,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127266014.2365658,
+          "server": 5566371.690408337,
+          "other": 167346984.61274588
+        }
+      },
+      {
+        "date": "2027-02",
+        "mmDev": 170,
+        "mmBiz": 15.555555555555552,
+        "mmTotal": 185.55555555555554,
+        "costDev": 49397802566.81378,
+        "costBiz": 1129743199.165002,
+        "costTotal": 47774732375.054924,
+        "costGI": 50527545765.97878,
+        "costBreakdown": {
+          "labor": 1902241876.2255256,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127319532.40543368,
+          "server": 5613618.222167914,
+          "other": 167220398.4492781
+        }
+      },
+      {
+        "date": "2027-03",
+        "mmDev": 170,
+        "mmBiz": 16.666666666666664,
+        "mmTotal": 186.66666666666666,
+        "costDev": 52322253217.10955,
+        "costBiz": 1277923361.1233218,
+        "costTotal": 50712394243.252396,
+        "costGI": 53600176578.23287,
+        "costBreakdown": {
+          "labor": 2213725283.361611,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127373050.57430157,
+          "server": 5630083.819330164,
+          "other": 167722232.5405285
+        }
+      },
+      {
+        "date": "2027-04",
+        "mmDev": 170,
+        "mmBiz": 17.777777777777775,
+        "mmTotal": 187.77777777777777,
+        "costDev": 55246773426.20977,
+        "costBiz": 1435953504.763372,
+        "costTotal": 53675349250.866684,
+        "costGI": 56682726930.973145,
+        "costBreakdown": {
+          "labor": 2195071322.404079,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127426568.74316946,
+          "server": 5635625.543050461,
+          "other": 186386692.40992406
+        }
+      },
+      {
+        "date": "2027-05",
+        "mmDev": 170,
+        "mmBiz": 18.888888888888886,
+        "mmTotal": 188.88888888888889,
+        "costDev": 57873604687.50122,
+        "costBiz": 1603830950.6935568,
+        "costTotal": 56350965256.493324,
+        "costGI": 59477435638.19478,
+        "costBreakdown": {
+          "labor": 1912774908.6947904,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127480086.91203734,
+          "server": 5640474.866240301,
+          "other": 170935790.81838197
+        }
+      },
+      {
+        "date": "2027-06",
+        "mmDev": 170,
+        "mmBiz": 19.999999999999996,
+        "mmTotal": 190,
+        "costDev": 60839144550.048615,
+        "costBiz": 1781552538.5400834,
+        "costTotal": 59346169360.22699,
+        "costGI": 62620697088.5887,
+        "costBreakdown": {
+          "labor": 2226464161.1289086,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127533605.08090523,
+          "server": 5643034.243920137,
+          "other": 195899062.09365982
+        }
+      },
+      {
+        "date": "2027-07",
+        "mmDev": 170,
+        "mmBiz": 21.111111111111107,
+        "mmTotal": 191.11111111111111,
+        "costDev": 63758444466.172806,
+        "costBiz": 1969114565.3901486,
+        "costTotal": 62321733230.84225,
+        "costGI": 65727559031.56296,
+        "costBreakdown": {
+          "labor": 2205926838.1607094,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127587123.24977311,
+          "server": 5648901.820837542,
+          "other": 170137052.89286873
+        }
+      },
+      {
+        "date": "2027-08",
+        "mmDev": 170,
+        "mmBiz": 22.222222222222218,
+        "mmTotal": 192.22222222222223,
+        "costDev": 66394833899.95306,
+        "costBiz": 2166512717.3158107,
+        "costTotal": 65025148885.24174,
+        "costGI": 68561346617.26887,
+        "costBreakdown": {
+          "labor": 1923268878.7426991,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 127640641.418641,
+          "server": 5658954.630814022,
+          "other": 169820958.9880938
+        }
+      },
+      {
+        "date": "2027-09",
+        "mmDev": 175,
+        "mmBiz": 23.33333333333333,
+        "mmTotal": 198.33333333333331,
+        "costDev": 69414995941.8632,
+        "costBiz": 2373741993.252805,
+        "costTotal": 68091399214.11819,
+        "costGI": 71788737935.11601,
+        "costBreakdown": {
+          "labor": 2300459507.9227824,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 131391636.96701434,
+          "server": 5660401.646629752,
+          "other": 172650495.3737175
+        }
+      },
+      {
+        "date": "2027-10",
+        "mmDev": 180,
+        "mmBiz": 24.44444444444444,
+        "mmTotal": 204.44444444444443,
+        "costDev": 72485237908.41147,
+        "costBiz": 2590819921.350864,
+        "costTotal": 71236195267.52582,
+        "costGI": 75076057829.76233,
+        "costBreakdown": {
+          "labor": 2339130780.8495026,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 135142632.51538765,
+          "server": 5651930.803088777,
+          "other": 180316622.38028055
+        }
+      },
+      {
+        "date": "2027-11",
+        "mmDev": 190,
+        "mmBiz": 25.55555555555555,
+        "mmTotal": 215.55555555555554,
+        "costDev": 75375830813.6213,
+        "costBiz": 2817746381.8299785,
+        "costTotal": 74212713247.57637,
+        "costGI": 78193577195.45128,
+        "costBreakdown": {
+          "labor": 2145246547.3437433,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 142591105.44326645,
+          "server": 5635074.509147224,
+          "other": 187120177.9136777
+        }
+      },
+      {
+        "date": "2027-12",
+        "mmDev": 200,
+        "mmBiz": 26.66666666666666,
+        "mmTotal": 226.66666666666666,
+        "costDev": 78836321612.70091,
+        "costBiz": 3054522059.784381,
+        "costTotal": 77735644472.46805,
+        "costGI": 81890843672.48529,
+        "costBreakdown": {
+          "labor": 2619431931.9219365,
+          "marketing": 0,
+          "outsourcing": 490000000,
+          "depreciation": 150039578.37114525,
+          "server": 5632803.978999977,
+          "other": 195386484.8075255
+        }
+      },
+      {
+        "date": "2028-01",
+        "mmDev": 200,
+        "mmBiz": 27.77777777777777,
+        "mmTotal": 227.77777777777777,
+        "costDev": 82190386919.44943,
+        "costBiz": 3301146443.1945305,
+        "costTotal": 81183051633.27803,
+        "costGI": 85491533362.64397,
+        "costBreakdown": {
+          "labor": 2594626183.8302135,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 150093096.54001313,
+          "server": 5634772.9812195515,
+          "other": 193711253.39707953
+        }
+      },
+      {
+        "date": "2028-02",
+        "mmDev": 200,
+        "mmBiz": 28.888888888888882,
+        "mmTotal": 228.88888888888889,
+        "costDev": 85210951595.45485,
+        "costBiz": 3557616707.428368,
+        "costTotal": 84308468726.24606,
+        "costGI": 88768568302.88322,
+        "costBreakdown": {
+          "labor": 2261485381.322678,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 150146614.70888102,
+          "server": 5640473.088787152,
+          "other": 193292206.8850747
+        }
+      },
+      {
+        "date": "2028-03",
+        "mmDev": 200,
+        "mmBiz": 29.999999999999993,
+        "mmTotal": 230,
+        "costDev": 88602635267.9358,
+        "costBiz": 3823932166.467495,
+        "costTotal": 87779160023.96912,
+        "costGI": 92426567434.4033,
+        "costBreakdown": {
+          "labor": 2632176046.6333065,
+          "marketing": 0,
+          "outsourcing": 410000000,
+          "depreciation": 150200132.8777489,
+          "server": 5642710.9943387555,
+          "other": 193664781.97556123
+        }
+      },
+      {
+        "date": "2028-04",
+        "mmDev": 200,
+        "mmBiz": 30,
+        "mmTotal": 230,
+        "costDev": 116127382145.75256,
+        "costBiz": 4090247207.9530206,
+        "costTotal": 91262193430.74768,
+        "costGI": 120217629353.70558,
+        "costBreakdown": {
+          "labor": 2601885403.0241833,
+          "marketing": 22865103390.629696,
+          "outsourcing": 410000000,
+          "depreciation": 150200132.8777489,
+          "server": 1282155330.3156838,
+          "other": 215402620.96944886
+        }
+      }
+    ]
+  }
+}
