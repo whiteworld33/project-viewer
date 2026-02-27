@@ -1,0 +1,56 @@
+{
+  "series": {
+    "mmDev": {
+      "color": "#3780bf",
+      "opacity": 0.45
+    },
+    "mmBiz": {
+      "color": "#db4052",
+      "opacity": 0.45
+    },
+    "costDev": {
+      "color": "#3780bf",
+      "opacity": 0.45
+    },
+    "costBiz": {
+      "color": "#db4052",
+      "opacity": 0.45
+    },
+    "bar_labor": {
+      "color": "#f4ce3b",
+      "opacity": 1
+    },
+    "bar_marketing": {
+      "color": "#52bbea",
+      "opacity": 1
+    },
+    "bar_outsourcing": {
+      "color": "#5dc3ae",
+      "opacity": 1
+    },
+    "bar_depreciation": {
+      "color": "#bfbfbf",
+      "opacity": 1
+    },
+    "bar_server": {
+      "color": "#b65cd2",
+      "opacity": 1
+    },
+    "bar_other": {
+      "color": "#f35d5d",
+      "opacity": 1
+    }
+  },
+  "axes": {
+    "chart_y_auto": true,
+    "chart_y_max": "",
+    "chart_y_step": "",
+    "cost_y_auto": true,
+    "cost_y_max": "",
+    "cost_y_step": "",
+    "bar_y_auto": true,
+    "bar_y_max": "",
+    "bar_y_step": "",
+    "x_format": "YY년MM월"
+  }
+}
