@@ -57,9 +57,10 @@
 
         #storage-info { font-size: 13px; color: #888; text-align: center; margin-top: 10px; }
 
-        .github-url-input { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .github-url-input { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
         .github-url-input label { font-weight: 500; font-size: 14px; white-space: nowrap; }
-        .github-url-input input { flex: 1; font-size: 14px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; min-width: 300px; }
+        .github-url-input input { font-size: 14px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
+        .github-url-preview { font-size: 12px; color: #555; background: #f0f7ff; border: 1px solid #b8d9f8; border-radius: 4px; padding: 6px 10px; margin-bottom: 12px; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -94,9 +95,12 @@
     <div class="section">
         <div class="section-title">3️⃣ JSON 다운로드 및 임베드 URL 생성</div>
         <div class="github-url-input">
-            <label>GitHub Pages 기본 URL:</label>
-            <input type="text" id="baseUrlInput" placeholder="https://계정명.github.io/레포명" value="">
+            <label>GitHub 계정명:</label>
+            <input type="text" id="accountInput" placeholder="예: whiteworld33">
+            <label style="margin-left:8px;">레포명:</label>
+            <input type="text" id="repoInput" placeholder="예: project-viewer">
         </div>
+        <div class="github-url-preview" id="urlPreview">🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong></div>
         <div class="btn-group">
             <button class="btn btn-success" id="downloadBtn" disabled>📥 projects.json 다운로드</button>
             <button class="btn btn-primary" id="generateUrlBtn" disabled>🔗 임베드 URL 생성</button>
@@ -244,8 +248,23 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('generateUrlBtn').disabled = (checked === 0);
     }
 
+    function getBaseUrl() {
+        var account = document.getElementById('accountInput').value.trim().replace(/\/+$/, '');
+        var repo    = document.getElementById('repoInput').value.trim().replace(/\/+$/, '');
+        if (!account || !repo) return '';
+        return 'https://' + account + '.github.io/' + repo;
+    }
+    function updateUrlPreview() {
+        var base = getBaseUrl();
+        var preview = document.getElementById('urlPreview');
+        if (base) {
+            preview.innerHTML = '🔗 생성될 기본 URL: <strong>' + base + '</strong>';
+        } else {
+            preview.innerHTML = '🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong>';
+        }
+    }
     function updateProjectLinks() {
-        var base = document.getElementById('baseUrlInput').value.trim().replace(/\/+$/, '');
+        var base = getBaseUrl();
         document.querySelectorAll('.project-card').forEach(function(card) {
             var name = card.getAttribute('data-name');
             var link = card.querySelector('.gh-link');
@@ -259,8 +278,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 link.style.display = 'none';
             }
         });
+        updateUrlPreview();
     }
-    document.getElementById('baseUrlInput').addEventListener('input', updateProjectLinks);
+    document.getElementById('accountInput').addEventListener('input', updateProjectLinks);
+    document.getElementById('repoInput').addEventListener('input', updateProjectLinks);
     document.getElementById('selectAllBtn').addEventListener('click', function() {
         document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = true; cb.closest('.project-card').classList.add('selected'); });
         updateBtns();
@@ -437,9 +458,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── 임베드 URL 생성 ──
     document.getElementById('generateUrlBtn').addEventListener('click', function() {
-        var baseUrl = document.getElementById('baseUrlInput').value.trim().replace(/\/+$/, '');
+        var baseUrl = getBaseUrl();
         if (!baseUrl) {
-            alert('GitHub Pages 기본 URL을 입력해 주세요.\n예: https://계정명.github.io/레포명');
+            alert('GitHub 계정명과 레포명을 모두 입력해 주세요.');
             return;
         }
 
