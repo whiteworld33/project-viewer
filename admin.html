@@ -224,7 +224,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
         container.querySelectorAll('.project-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
-                if (e.target.tagName === 'INPUT') return;
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'A') return;
                 var cb = card.querySelector('.proj-check');
                 cb.checked = !cb.checked;
                 card.classList.toggle('selected', cb.checked);
