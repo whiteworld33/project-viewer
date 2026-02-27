@@ -152,9 +152,10 @@
                 contentDiv.classList.remove('table-mode');
                 contentDiv.innerHTML = '<div id="chart"></div>';
 
-                var labels = rows.map(function(r) { return r.date; });
-                var devData = rows.map(function(r) { return r.mmDev; });
-                var bizData = rows.map(function(r) { return r.mmBiz; });
+                var chartRows = rows.filter(function(r) { return r.date < launch; });
+                var labels = chartRows.map(function(r) { return r.date; });
+                var devData = chartRows.map(function(r) { return r.mmDev; });
+                var bizData = chartRows.map(function(r) { return r.mmBiz; });
 
                 var traceDev = {
                     x: labels, y: devData,
@@ -226,9 +227,10 @@
             else if (viewType === 'cost') {
                 contentDiv.classList.remove('table-mode');
                 contentDiv.innerHTML = '<div id="chart"></div>';
-                var labels = rows.map(function(r) { return r.date; });
-                var devCostData = rows.map(function(r) { return r.costDev / 1000000; });
-                var bizCostData = rows.map(function(r) { return r.costBiz / 1000000; });
+                var costRows = rows.filter(function(r) { return r.date < launch; });
+                var labels = costRows.map(function(r) { return r.date; });
+                var devCostData = costRows.map(function(r) { return r.costDev / 1000000; });
+                var bizCostData = costRows.map(function(r) { return r.costBiz / 1000000; });
                 var traceDevCost = {
                     x: labels, y: devCostData,
                     name: '개발비', type: 'scatter', mode: 'lines',
@@ -438,16 +440,17 @@
                     + '<div class="dash-item" id="d-pie-prev"></div>'
                     + '</div>'
                     + '<div id="d-urls" class="dash-urls"></div>';
-                var labels = rows.map(function(r) { return r.date; });
-                var lastLabel = labels[labels.length - 1] || launch;
+                var dashRows = rows.filter(function(r) { return r.date < launch; });
+                var labels = dashRows.map(function(r) { return r.date; });
+                var lastLabel = labels[labels.length - 1] || currentDate;
                 var shapeRect = { type:'rect', x0:currentDate, x1:lastLabel, y0:0, y1:1, yref:'paper', fillcolor:'rgba(255,255,255,0.45)', line:{width:0}, layer:'above' };
                 var shapeLine = { type:'line', x0:currentDate, x1:currentDate, y0:0, y1:1, yref:'paper', line:{color:'rgba(0,0,0,0.5)',width:2,dash:'dash'}, layer:'above' };
                 var annotCur  = { x:currentDate, y:1.02, yref:'paper', text:'◀ 실적 | 예측 ▶', showarrow:false, font:{size:10,color:'rgba(0,0,0,0.6)'}, yanchor:'bottom' };
                 var commonCfg = { responsive: true };
                 // ── MM 차트 ──
                 Plotly.newPlot('d-mm', [
-                    { x:labels, y:rows.map(function(r){return r.mmDev;}), name:'개발 MM', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(55,128,191)'}, fillcolor:'rgba(55,128,191,0.6)', hovertemplate:'%{x}<br>개발 MM: %{y:.1f}<extra></extra>' },
-                    { x:labels, y:rows.map(function(r){return r.mmBiz;}), name:'사업 MM', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(219,64,82)'}, fillcolor:'rgba(219,64,82,0.6)', hovertemplate:'%{x}<br>사업 MM: %{y:.1f}<extra></extra>' }
+                    { x:labels, y:dashRows.map(function(r){return r.mmDev;}), name:'개발 MM', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(55,128,191)'}, fillcolor:'rgba(55,128,191,0.6)', hovertemplate:'%{x}<br>개발 MM: %{y:.1f}<extra></extra>' },
+                    { x:labels, y:dashRows.map(function(r){return r.mmBiz;}), name:'사업 MM', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(219,64,82)'}, fillcolor:'rgba(219,64,82,0.6)', hovertemplate:'%{x}<br>사업 MM: %{y:.1f}<extra></extra>' }
                 ], {
                     title: { text:'월별 MM 현황', font:{size:14}, y:0.97 },
                     xaxis: { tickangle:-45, tickformat:'%Y-%m', tickfont:{size:9}, nticks:20 },
@@ -459,8 +462,8 @@
                 }, commonCfg);
                 // ── 누적 개발비 차트 ──
                 Plotly.newPlot('d-cost', [
-                    { x:labels, y:rows.map(function(r){return r.costDev/1000000;}), name:'개발비', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(55,128,191)'}, fillcolor:'rgba(55,128,191,0.6)', hovertemplate:'%{x}<br>개발비: %{y:,.0f} 백만원<extra></extra>' },
-                    { x:labels, y:rows.map(function(r){return r.costBiz/1000000;}), name:'사업비', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(219,64,82)'}, fillcolor:'rgba(219,64,82,0.6)', hovertemplate:'%{x}<br>사업비: %{y:,.0f} 백만원<extra></extra>' }
+                    { x:labels, y:dashRows.map(function(r){return r.costDev/1000000;}), name:'개발비', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(55,128,191)'}, fillcolor:'rgba(55,128,191,0.6)', hovertemplate:'%{x}<br>개발비: %{y:,.0f} 백만원<extra></extra>' },
+                    { x:labels, y:dashRows.map(function(r){return r.costBiz/1000000;}), name:'사업비', type:'scatter', mode:'lines', stackgroup:'one', line:{color:'rgb(219,64,82)'}, fillcolor:'rgba(219,64,82,0.6)', hovertemplate:'%{x}<br>사업비: %{y:,.0f} 백만원<extra></extra>' }
                 ], {
                     title: { text:'누적 개발비 현황', font:{size:14}, y:0.97 },
                     xaxis: { tickangle:-45, tickformat:'%Y-%m', tickfont:{size:9}, nticks:20 },
