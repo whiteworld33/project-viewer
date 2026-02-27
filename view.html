@@ -283,7 +283,7 @@
                 { key: 'bar_other',        name: '기타 운영비'}
             ];
             var barTraces = categories.map(function(cat) {
-                var yVals = barRows.map(function(r) { return (r.costBreakdown[cat.key]||0)/K; });
+                var yVals = barRows.map(function(r) { return (r.costBreakdown[cat.key.replace('bar_','')]||0)/K; });
                 return { x:bLabels, y:yVals, text:yVals.map(function(v){return v>0?Math.round(v).toLocaleString():''}), textposition:'inside', insidetextanchor:'middle', textfont:{size:9,color:'#fff'}, name:cat.name, type:'bar', marker:{color:fc(cat.key)}, hovertemplate:'%{x}<br>'+cat.name+': %{y:,.0f} 천원<extra></extra>' };
             });
             var yBar = { title: '개발비 (천원)' };
@@ -332,7 +332,7 @@
             var chartDiv = document.getElementById('chart');
             Plotly.newPlot(chartDiv, [{
                 labels: pieCats.map(function(c){return c.name;}),
-                values: pieCats.map(function(c){return (bd[c.key]||0)/K;}),
+                values: pieCats.map(function(c){return (bd[c.key.replace('bar_','')]||0)/K;}),
                 type: 'pie',
                 marker: { colors: pieCats.map(function(c){return fc(c.key);}) },
                 textinfo: 'percent', textposition: 'inside',
@@ -404,7 +404,7 @@
                     {key:'bar_server',name:'서버비'},{key:'bar_other',name:'기타 운영비'}
                 ];
                 var bTraces = cats.map(function(cat) {
-                    var yv = barRows.map(function(r){return (r.costBreakdown[cat.key]||0)/K;});
+                    var yv = barRows.map(function(r){return (r.costBreakdown[cat.key.replace('bar_','')]||0)/K;});
                     return { x:bLabels, y:yv, text:yv.map(function(v){return v>0?Math.round(v).toLocaleString():''}), textposition:'inside', insidetextanchor:'middle', textfont:{size:8,color:'#fff'}, name:cat.name, type:'bar', marker:{color:fc(cat.key)}, hovertemplate:'%{x}<br>'+cat.name+': %{y:,.0f} 천원<extra></extra>' };
                 });
                 var yDBar = { title: '천원' }; applyY(yDBar, 'bar');
@@ -430,7 +430,7 @@
                     var tp=targetDate.split('-');
                     Plotly.newPlot(cId, [{
                         labels: pieCats.map(function(c){return c.name;}),
-                        values: pieCats.map(function(c){return (bd[c.key]||0)/K;}),
+                        values: pieCats.map(function(c){return (bd[c.key.replace('bar_','')]||0)/K;}),
                         type:'pie', marker:{colors:pieCats.map(function(c){return fc(c.key);})},
                         textinfo:'percent', textposition:'inside', texttemplate:'%{percent:.1%}',
                         hovertemplate:'%{label}<br>%{value:,.0f} 천원<extra></extra>',
