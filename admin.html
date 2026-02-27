@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>프로젝트 데이터 관리자</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 20px; background: #f4f4f9; color: #333; }
@@ -13,11 +14,9 @@
         .section { margin-bottom: 24px; }
         .section-title { font-size: 16px; font-weight: 600; margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid #eee; }
         .section-title .badge { font-size: 12px; background: #e0e0e0; color: #555; padding: 2px 8px; border-radius: 10px; margin-left: 8px; font-weight: 400; }
-
         .file-area { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
         .file-area input[type="file"] { font-size: 14px; }
         .file-area .status { font-size: 13px; color: #888; }
-
         #project-list { display: flex; flex-direction: column; gap: 10px; }
         .project-card { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: 1px solid #e0e0e0; border-radius: 6px; background: #fafafa; flex-wrap: wrap; }
         .project-card.selected { border-color: #007bff; background: #f0f7ff; }
@@ -29,8 +28,6 @@
         .project-card .sheet-wrap { display: flex; align-items: center; gap: 4px; font-size: 12px; }
         .project-card .sheet-wrap label { color: #666; white-space: nowrap; }
         .project-card .sheet-wrap input[type="text"] { font-size: 12px; padding: 2px 6px; border: 1px solid #ccc; border-radius: 3px; width: 160px; background: #fffbe6; }
-        .sheet-hint { font-size: 11px; color: #aaa; margin-top: 2px; }
-
         .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
         .btn { font-size: 15px; padding: 10px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 500; }
         .btn-primary { background: #007bff; color: #fff; }
@@ -40,7 +37,6 @@
         .btn-secondary { background: #6c757d; color: #fff; }
         .btn-secondary:hover { background: #545b62; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
         #url-output { margin-top: 20px; }
         .url-group { margin-bottom: 16px; }
         .url-group h4 { margin-bottom: 6px; color: #333; }
@@ -48,26 +44,46 @@
         .url-row code { flex: 1; background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-size: 13px; word-break: break-all; border: 1px solid #e0e0e0; }
         .url-row .copy-btn { font-size: 12px; padding: 6px 12px; background: #17a2b8; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
         .url-row .copy-btn:hover { background: #138496; }
-
         .msg { padding: 10px 16px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
         .msg-success { background: #d4edda; color: #155724; }
         .msg-info { background: #d1ecf1; color: #0c5460; }
         .msg-warn { background: #fff3cd; color: #856404; }
         .msg-error { background: #f8d7da; color: #721c24; }
-
         #storage-info { font-size: 13px; color: #888; text-align: center; margin-top: 10px; }
-
         .github-url-input { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
         .github-url-input label { font-weight: 500; font-size: 14px; white-space: nowrap; }
         .github-url-input input { font-size: 14px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
         .github-url-preview { font-size: 12px; color: #555; background: #f0f7ff; border: 1px solid #b8d9f8; border-radius: 4px; padding: 6px 10px; margin-bottom: 12px; word-break: break-all; }
+        /* ── 4️⃣ 차트 설정 ── */
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 720px) { .settings-grid { grid-template-columns: 1fr; } }
+        .subsection-title { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #eee; }
+        .series-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .series-table th { padding: 5px 8px; background: #f0f0f0; font-weight: 600; text-align: left; font-size: 12px; }
+        .series-table td { padding: 4px 8px; border-bottom: 1px solid #f2f2f2; vertical-align: middle; }
+        .series-table .group-hd td { background: #f8f8f8; font-weight: 600; font-size: 11px; color: #777; padding: 3px 8px; }
+        input[type="color"] { width: 34px; height: 26px; padding: 1px 2px; border: 1px solid #ccc; border-radius: 3px; cursor: pointer; vertical-align: middle; }
+        .op-slider { width: 90px; vertical-align: middle; }
+        .oval { font-size: 11px; color: #666; min-width: 28px; display: inline-block; }
+        .axis-block { margin-bottom: 10px; border: 1px solid #eee; border-radius: 5px; padding: 8px 10px; }
+        .axis-block-title { font-size: 12px; font-weight: 600; color: #555; margin-bottom: 6px; }
+        .axis-row2 { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+        .axis-row2 label { font-size: 12px; color: #666; }
+        .axis-row2 input[type="number"] { width: 72px; font-size: 12px; padding: 3px 6px; border: 1px solid #ccc; border-radius: 3px; }
+        .xfmt-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+        .xfmt-row label { font-size: 12px; color: #555; cursor: pointer; }
+        .preview-wrap { border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; background: #fafafa; display: flex; flex-direction: column; }
+        .preview-tabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+        .preview-tab { font-size: 12px; padding: 4px 12px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: #fff; }
+        .preview-tab.active { background: #007bff; color: #fff; border-color: #007bff; }
+        #preview-canvas-wrap { position: relative; height: 300px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <h1>📊 프로젝트 데이터 관리자</h1>
-    <p class="subtitle">엑셀 → projects.json 다운로드 → GitHub Pages → 노션 임베드</p>
+    <p class="subtitle">엑셀 → projects.json 다운로드 · 차트 설정 → settings.json 다운로드 → GitHub Pages → 노션 임베드</p>
 
     <!-- STEP 1: 파일 업로드 -->
     <div class="section">
@@ -109,6 +125,45 @@
         <div id="storage-info"></div>
         <div id="url-output"></div>
     </div>
+
+    <!-- STEP 4: 차트 설정 & 미리보기 -->
+    <div class="section">
+        <div class="section-title">4️⃣ 차트 설정 &amp; 미리보기</div>
+        <p style="font-size:12px; color:#888; margin-bottom:14px;">💡 설정 완료 후 <strong>settings.json 다운로드</strong> → GitHub 레포 <code>data/</code> 폴더에 push 하면, 모든 프로젝트 차트에 공통 적용됩니다. settings.json이 없으면 기본값이 사용됩니다.</p>
+        <div class="settings-grid">
+            <div>
+                <div class="subsection-title">📊 시리즈 색상 / 투명도</div>
+                <table class="series-table" id="series-table">
+                    <thead><tr><th>시리즈</th><th>색상</th><th>투명도</th><th></th></tr></thead>
+                    <tbody></tbody>
+                </table>
+                <div style="margin-top:16px;">
+                    <div class="subsection-title">📐 Y축 설정</div>
+                    <div id="axis-settings"></div>
+                    <div style="margin-top:12px;">
+                        <div class="subsection-title">📅 X축 날짜 포맷</div>
+                        <div class="xfmt-row" id="xfmt-row"></div>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="subsection-title">👁 실시간 미리보기</div>
+                <div class="preview-wrap">
+                    <div class="preview-tabs">
+                        <button class="preview-tab active" data-type="mm">MM</button>
+                        <button class="preview-tab" data-type="cost">비용</button>
+                        <button class="preview-tab" data-type="bar">막대</button>
+                        <button class="preview-tab" data-type="pie">파이</button>
+                    </div>
+                    <div id="preview-canvas-wrap"><canvas id="previewChart"></canvas></div>
+                </div>
+            </div>
+        </div>
+        <div class="btn-group">
+            <button class="btn btn-primary" id="downloadSettingsBtn">📥 settings.json 다운로드</button>
+        </div>
+        <div id="settings-msg"></div>
+    </div>
 </div>
 
 <script>
@@ -122,7 +177,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     var parsedProjects = {};
-    var workbook = null; // 전역 workbook 참조 (비용 시트 파싱용)
+    var workbook = null;
     var lastSaveData = null;
 
     // ── STEP 1: 파일 업로드 ──
@@ -130,29 +185,24 @@ document.addEventListener('DOMContentLoaded', function() {
         var file = this.files[0];
         if (!file) return;
         document.getElementById('file-status').textContent = '파싱 중...';
-
         var reader = new FileReader();
         reader.onload = function(e) {
             try {
                 var data = new Uint8Array(e.target.result);
-                workbook = XLSX.read(data, { type: 'array' }); // 전역 저장
+                workbook = XLSX.read(data, { type: 'array' });
                 var sheetName = '개발전략기획실';
                 var ws = workbook.Sheets[sheetName];
                 if (!ws) throw new Error("'" + sheetName + "' 시트를 찾을 수 없습니다.");
-
                 var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
                 parsedProjects = {};
-
                 for (var i = 0; i < sheet.length; i++) {
                     for (var j = 0; j < (sheet[i] || []).length; j++) {
                         var cellVal = (sheet[i][j] || '').toString().trim();
                         if (!cellVal || typeof sheet[i][j] === 'number') continue;
-
                         var dataRow = i + 5;
                         if (dataRow >= sheet.length) continue;
                         var checkVal = (sheet[dataRow] || [])[j];
                         if (typeof checkVal !== 'number' || checkVal < 30000 || checkVal > 60000) continue;
-
                         var rows = [];
                         for (var r = dataRow; r < sheet.length; r++) {
                             var rv = (sheet[r] || [])[j];
@@ -160,32 +210,17 @@ document.addEventListener('DOMContentLoaded', function() {
                             var ym = excelDateToYM(rv);
                             if (!ym) break;
                             var row = sheet[r] || [];
-                            rows.push({
-                                date: ym,
-                                mmDev:    row[j + 1] || 0,
-                                mmBiz:    row[j + 2] || 0,
-                                mmTotal:  row[j + 3] || 0,
-                                costDev:  row[j + 4] || 0,
-                                costBiz:  row[j + 5] || 0,
-                                costTotal: row[j + 6] || 0
-                                // costGI는 다운로드 시 costDev+costBiz로 계산
-                            });
+                            rows.push({ date: ym, mmDev: row[j+1]||0, mmBiz: row[j+2]||0, mmTotal: row[j+3]||0, costDev: row[j+4]||0, costBiz: row[j+5]||0, costTotal: row[j+6]||0 });
                         }
                         if (rows.length > 0) {
-                            parsedProjects[cellVal] = {
-                                rows: rows,
-                                firstDate: rows[0].date,
-                                lastDate: rows[rows.length - 1].date
-                            };
+                            parsedProjects[cellVal] = { rows: rows, firstDate: rows[0].date, lastDate: rows[rows.length-1].date };
                         }
                     }
                 }
-
                 var names = Object.keys(parsedProjects);
                 document.getElementById('file-status').textContent = file.name + ' (' + names.length + '개 프로젝트 탐지)';
                 document.getElementById('project-count').textContent = names.length + '개 탐지';
                 renderProjectList(names);
-
             } catch(err) {
                 document.getElementById('file-status').textContent = '오류: ' + err.message;
                 document.getElementById('project-list').innerHTML = '<p style="color:red;">' + err.message + '</p>';
@@ -194,16 +229,11 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.readAsArrayBuffer(file);
     });
 
-    // ── 프로젝트 목록 렌더링 ──
     function renderProjectList(names) {
         var container = document.getElementById('project-list');
-        if (names.length === 0) {
-            container.innerHTML = '<p style="color:#aaa;">탐지된 프로젝트가 없습니다.</p>';
-            return;
-        }
+        if (names.length === 0) { container.innerHTML = '<p style="color:#aaa;">탐지된 프로젝트가 없습니다.</p>'; return; }
         var now = new Date();
         var currentYM = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
-
         container.innerHTML = names.map(function(name) {
             var p = parsedProjects[name];
             return '<div class="project-card" data-name="' + name + '">'
@@ -215,13 +245,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<div><label>기준월</label><input type="month" class="dt-current" value="' + currentYM + '"></div>'
                 + '<div><label>런칭</label><input type="month" class="dt-launch" value="' + p.lastDate + '"></div>'
                 + '</div>'
-                + '<div class="sheet-wrap">'
-                + '<label>비용 시트명</label>'
-                + '<input type="text" class="dt-sheet" placeholder="시트명 입력">'
-                + '</div>'
+                + '<div class="sheet-wrap"><label>비용 시트명</label><input type="text" class="dt-sheet" placeholder="시트명 입력"></div>'
                 + '</div>';
         }).join('');
-
         container.querySelectorAll('.project-card').forEach(function(card) {
             card.addEventListener('click', function(e) {
                 if (e.target.tagName === 'INPUT' || e.target.tagName === 'A') return;
@@ -235,7 +261,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 updateBtns();
             });
         });
-
         document.getElementById('selectAllBtn').disabled = false;
         document.getElementById('deselectAllBtn').disabled = false;
         updateBtns();
@@ -257,11 +282,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function updateUrlPreview() {
         var base = getBaseUrl();
         var preview = document.getElementById('urlPreview');
-        if (base) {
-            preview.innerHTML = '🔗 생성될 기본 URL: <strong>' + base + '</strong>';
-        } else {
-            preview.innerHTML = '🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong>';
-        }
+        if (base) { preview.innerHTML = '🔗 생성될 기본 URL: <strong>' + base + '</strong>'; }
+        else { preview.innerHTML = '🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong>'; }
     }
     function updateProjectLinks() {
         var base = getBaseUrl();
@@ -269,14 +291,8 @@ document.addEventListener('DOMContentLoaded', function() {
             var name = card.getAttribute('data-name');
             var link = card.querySelector('.gh-link');
             if (!link) return;
-            if (base && name) {
-                var url = base + '/view.html?project=' + encodeURIComponent(name) + '&type=dashboard';
-                link.href = url;
-                link.style.display = 'inline';
-            } else {
-                link.href = '#';
-                link.style.display = 'none';
-            }
+            if (base && name) { link.href = base + '/view.html?project=' + encodeURIComponent(name) + '&type=dashboard'; link.style.display = 'inline'; }
+            else { link.href = '#'; link.style.display = 'none'; }
         });
         updateUrlPreview();
     }
@@ -291,216 +307,337 @@ document.addEventListener('DOMContentLoaded', function() {
         updateBtns();
     });
 
-    // ── costDev 시트 파싱 ──
-    // 지정 시트의 2행(index 1)에서 날짜 스캔 → 킥오프~런칭 범위 → 38행(index 37) 값 수집
     function getCostDevMap(sheetName, kickoff, launch) {
         if (!sheetName || !workbook) return null;
         var ws = workbook.Sheets[sheetName];
         if (!ws) return null;
-
         var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
         if (sheet.length < 38) return null;
-
-        var row2  = sheet[1]  || []; // 2행: 날짜 헤더
-        var row38 = sheet[37] || []; // 38행: costDev 데이터
-
+        var row2 = sheet[1] || [], row38 = sheet[37] || [];
         var map = {};
         for (var c = 0; c < row2.length; c++) {
-            var cell = row2[c];
-            if (cell === null || cell === undefined) continue;
+            var cell = row2[c]; if (cell === null || cell === undefined) continue;
             var ym = null;
-            if (typeof cell === 'number' && cell > 30000 && cell < 60000) {
-                ym = excelDateToYM(cell);
-            } else if (typeof cell === 'string') {
-                // "YYYY-MM" 또는 "YYYY/MM" 형태 대응
-                var m = cell.match(/(\d{4})[\-\/](\d{1,2})/);
-                if (m) ym = m[1] + '-' + ('0' + m[2]).slice(-2);
-            }
+            if (typeof cell === 'number' && cell > 30000 && cell < 60000) { ym = excelDateToYM(cell); }
+            else if (typeof cell === 'string') { var m = cell.match(/(\d{4})[\-\/](\d{1,2})/); if (m) ym = m[1] + '-' + ('0' + m[2]).slice(-2); }
             if (!ym) continue;
-            if (ym >= kickoff && ym <= launch) {
-                map[ym] = (row38[c] !== null && row38[c] !== undefined) ? row38[c] : 0;
-            }
+            if (ym >= kickoff && ym <= launch) { map[ym] = (row38[c] !== null && row38[c] !== undefined) ? row38[c] : 0; }
         }
         return map;
     }
 
-    // ── 항목별 월별 비용 맵 (bar 차트용) ──
-    // 행 인덱스(0-based): 인건비=38, 마케팅비=44, 외주비=46, 감가상각비=52, 서버비=58, 기타운영비=63
     function getBreakdownMap(sheetName, kickoff, launch) {
         if (!sheetName || !workbook) return null;
         var ws = workbook.Sheets[sheetName];
         if (!ws) return null;
         var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
         if (sheet.length < 64) return null;
-        var row2  = sheet[1]  || [];
-        var rLbr  = sheet[38] || [];
-        var rMkt  = sheet[44] || [];
-        var rOut  = sheet[46] || [];
-        var rDep  = sheet[52] || [];
-        var rSrv  = sheet[58] || [];
-        var rOth  = sheet[63] || [];
+        var row2=sheet[1]||[], rLbr=sheet[38]||[], rMkt=sheet[44]||[], rOut=sheet[46]||[], rDep=sheet[52]||[], rSrv=sheet[58]||[], rOth=sheet[63]||[];
         var bdMap = {};
         for (var c = 0; c < row2.length; c++) {
-            var cell = row2[c];
-            if (cell === null || cell === undefined) continue;
+            var cell = row2[c]; if (cell===null||cell===undefined) continue;
             var ym = null;
-            if (typeof cell === 'number' && cell > 30000 && cell < 60000) {
-                ym = excelDateToYM(cell);
-            } else if (typeof cell === 'string') {
-                var m2 = cell.match(/(\d{4})[\-\/](\d{1,2})/);
-                if (m2) ym = m2[1] + '-' + ('0' + m2[2]).slice(-2);
-            }
+            if (typeof cell==='number' && cell>30000 && cell<60000) { ym=excelDateToYM(cell); }
+            else if (typeof cell==='string') { var m2=cell.match(/(\d{4})[\-\/](\d{1,2})/); if(m2) ym=m2[1]+'-'+('0'+m2[2]).slice(-2); }
             if (!ym) continue;
-            if (ym >= kickoff && ym <= launch) {
-                bdMap[ym] = {
-                    labor:        (rLbr[c] != null) ? rLbr[c] : 0,
-                    marketing:    (rMkt[c] != null) ? rMkt[c] : 0,
-                    outsourcing:  (rOut[c] != null) ? rOut[c] : 0,
-                    depreciation: (rDep[c] != null) ? rDep[c] : 0,
-                    server:       (rSrv[c] != null) ? rSrv[c] : 0,
-                    other:        (rOth[c] != null) ? rOth[c] : 0
-                };
+            if (ym>=kickoff && ym<=launch) {
+                bdMap[ym] = { labor:(rLbr[c]!=null)?rLbr[c]:0, marketing:(rMkt[c]!=null)?rMkt[c]:0, outsourcing:(rOut[c]!=null)?rOut[c]:0, depreciation:(rDep[c]!=null)?rDep[c]:0, server:(rSrv[c]!=null)?rSrv[c]:0, other:(rOth[c]!=null)?rOth[c]:0 };
             }
         }
         return bdMap;
     }
-    // ── 선택 데이터 수집 ──
+
     function collectSelectedData() {
         var cards = document.querySelectorAll('.project-card');
-        var saveData = {};
-        var warnings = [];
-
+        var saveData = {}, warnings = [];
         cards.forEach(function(card) {
             var cb = card.querySelector('.proj-check');
             if (!cb.checked) return;
-            var name      = card.getAttribute('data-name');
-            var kickoff   = card.querySelector('.dt-kickoff').value;
-            var current   = card.querySelector('.dt-current').value;
-            var launch    = card.querySelector('.dt-launch').value;
-            var sheetName = card.querySelector('.dt-sheet').value.trim();
-            var proj      = parsedProjects[name];
+            var name=card.getAttribute('data-name'), kickoff=card.querySelector('.dt-kickoff').value, current=card.querySelector('.dt-current').value, launch=card.querySelector('.dt-launch').value, sheetName=card.querySelector('.dt-sheet').value.trim();
+            var proj = parsedProjects[name];
             if (!proj) return;
-
-            // costDev 맵 가져오기 (시트명 있을 때만)
-            var costDevMap = null;
-            var breakdownMap = null;
+            var costDevMap=null, breakdownMap=null;
             if (sheetName) {
                 costDevMap = getCostDevMap(sheetName, kickoff, launch);
-                if (!costDevMap) {
-                    warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다. 기존 costDev 값을 사용합니다.');
-                }
+                if (!costDevMap) warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다. 기존 costDev 값을 사용합니다.');
                 breakdownMap = getBreakdownMap(sheetName, kickoff, launch);
             }
-
-            // 비용 시트 사용 시: 월별 값을 누적합으로 변환
             var cumCostDev = 0;
-            var filtered = proj.rows
-                .filter(function(r) { return r.date >= kickoff && r.date <= launch; })
-                .map(function(r) {
-                    var costDev;
-                    if (costDevMap) {
-                        // 비용 시트 지정됨: 월별 값을 누적
-                        var monthly = (costDevMap[r.date] !== undefined) ? costDevMap[r.date] : 0;
-                        cumCostDev += monthly;
-                        costDev = cumCostDev;
-                    } else {
-                        // 비용 시트 미지정: 기존 시트 값 그대로 (이미 누적값)
-                        costDev = r.costDev;
-                    }
-                    return {
-                        date:      r.date,
-                        mmDev:     r.mmDev,
-                        mmBiz:     r.mmBiz,
-                        mmTotal:   r.mmTotal,
-                        costDev:   costDev,
-                        costBiz:   r.costBiz,
-                        costTotal: r.costTotal,
-                        costGI:        costDev + r.costBiz,  // 누적 costDev + costBiz
-                        costBreakdown: breakdownMap ? (breakdownMap[r.date] || {labor:0,marketing:0,outsourcing:0,depreciation:0,server:0,other:0}) : null
-                    };
-                });
-
-            saveData[name] = {
-                kickoff: kickoff,
-                current: current,
-                launch:  launch,
-                rows:    filtered
-            };
+            var filtered = proj.rows.filter(function(r){ return r.date>=kickoff && r.date<=launch; }).map(function(r) {
+                var costDev;
+                if (costDevMap) { var monthly=(costDevMap[r.date]!==undefined)?costDevMap[r.date]:0; cumCostDev+=monthly; costDev=cumCostDev; }
+                else { costDev=r.costDev; }
+                return { date:r.date, mmDev:r.mmDev, mmBiz:r.mmBiz, mmTotal:r.mmTotal, costDev:costDev, costBiz:r.costBiz, costTotal:r.costTotal, costGI:costDev+r.costBiz, costBreakdown:breakdownMap?(breakdownMap[r.date]||{labor:0,marketing:0,outsourcing:0,depreciation:0,server:0,other:0}):null };
+            });
+            saveData[name] = { kickoff:kickoff, current:current, launch:launch, rows:filtered };
         });
         return { data: saveData, warnings: warnings };
     }
 
-    // ── JSON 다운로드 ──
     document.getElementById('downloadBtn').addEventListener('click', function() {
         var result = collectSelectedData();
         lastSaveData = result.data;
-
         var jsonStr = JSON.stringify(lastSaveData, null, 2);
         var blob = new Blob([jsonStr], { type: 'application/json' });
         var url = URL.createObjectURL(blob);
         var a = document.createElement('a');
-        a.href = url;
-        a.download = 'projects.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        var sizeKB = (blob.size / 1024).toFixed(1);
-        var cnt = Object.keys(lastSaveData).length;
-        var msgHtml = '<div class="msg msg-success">✅ projects.json 다운로드 완료 (' + cnt + '개 프로젝트, ' + sizeKB + ' KB)</div>'
+        a.href=url; a.download='projects.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        var sizeKB=(blob.size/1024).toFixed(1), cnt=Object.keys(lastSaveData).length;
+        var msgHtml = '<div class="msg msg-success">✅ projects.json 다운로드 완료 ('+cnt+'개 프로젝트, '+sizeKB+' KB)</div>'
             + '<div class="msg msg-warn" style="margin-top:8px;">📌 다운로드한 파일을 GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
-        if (result.warnings.length > 0) {
-            msgHtml += '<div class="msg msg-error" style="margin-top:8px;">' + result.warnings.join('<br>') + '</div>';
-        }
+        if (result.warnings.length > 0) msgHtml += '<div class="msg msg-error" style="margin-top:8px;">'+result.warnings.join('<br>')+'</div>';
         document.getElementById('save-msg').innerHTML = msgHtml;
     });
 
-    // ── 임베드 URL 생성 ──
     document.getElementById('generateUrlBtn').addEventListener('click', function() {
         var baseUrl = getBaseUrl();
-        if (!baseUrl) {
-            alert('GitHub 계정명과 레포명을 모두 입력해 주세요.');
-            return;
-        }
-
+        if (!baseUrl) { alert('GitHub 계정명과 레포명을 모두 입력해 주세요.'); return; }
         var result = collectSelectedData();
-        var data   = result.data;
-        var names  = Object.keys(data);
-
-        var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 노션 임베드용 URL (' + names.length + '개)</h3>';
+        var data = result.data, names = Object.keys(data);
+        var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 노션 임베드용 URL ('+names.length+'개)</h3>';
         names.forEach(function(name) {
-            var enc = encodeURIComponent(name);
-            var tableUrl = baseUrl + '/view.html?project=' + enc + '&type=table';
-            var chartUrl = baseUrl + '/view.html?project=' + enc + '&type=chart';
-
-            var costUrl    = baseUrl + '/view.html?project=' + enc + '&type=cost';
-            var barUrl     = baseUrl + '/view.html?project=' + enc + '&type=bar';
-            var pieUrl     = baseUrl + '/view.html?project=' + enc + '&type=pie';
-            var pieUrlPrev = baseUrl + '/view.html?project=' + enc + '&type=pie&month=prev';
-            urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">표</span><code>' + tableUrl + '</code><button class="copy-btn" data-url="' + tableUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">MM</span><code>' + chartUrl + '</code><button class="copy-btn" data-url="' + chartUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">비용</span><code>' + costUrl + '</code><button class="copy-btn" data-url="' + costUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:40px;">막대</span><code>' + barUrl + '</code><button class="copy-btn" data-url="' + barUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(기준)</span><code>' + pieUrl + '</code><button class="copy-btn" data-url="' + pieUrl + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">파이(전달)</span><code>' + pieUrlPrev + '</code><button class="copy-btn" data-url="' + pieUrlPrev + '">복사</button></div>'
-                + '<div class="url-row"><span style="font-size:12px;color:#888;width:55px;">대시보드</span><code>' + (baseUrl + '/view.html?project=' + enc + '&type=dashboard') + '</code><button class="copy-btn" data-url="' + (baseUrl + '/view.html?project=' + enc + '&type=dashboard') + '">복사</button></div></div>';
+            var enc=encodeURIComponent(name);
+            var urls = [
+                ['표',        baseUrl+'/view.html?project='+enc+'&type=table'],
+                ['MM',        baseUrl+'/view.html?project='+enc+'&type=chart'],
+                ['비용',      baseUrl+'/view.html?project='+enc+'&type=cost'],
+                ['막대',      baseUrl+'/view.html?project='+enc+'&type=bar'],
+                ['파이(기준)',baseUrl+'/view.html?project='+enc+'&type=pie'],
+                ['파이(전달)',baseUrl+'/view.html?project='+enc+'&type=pie&month=prev'],
+                ['대시보드',  baseUrl+'/view.html?project='+enc+'&type=dashboard']
+            ];
+            urlHTML += '<div class="url-group"><h4>📌 '+name+'</h4>';
+            urls.forEach(function(u) {
+                urlHTML += '<div class="url-row"><span style="font-size:12px;color:#888;min-width:55px;">'+u[0]+'</span><code>'+u[1]+'</code><button class="copy-btn" data-url="'+u[1]+'">복사</button></div>';
+            });
+            urlHTML += '</div>';
         });
-
         document.getElementById('url-output').innerHTML = urlHTML;
-
         document.querySelectorAll('.copy-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
-                var self = this;
+                var self=this;
                 navigator.clipboard.writeText(self.getAttribute('data-url')).then(function() {
-                    self.textContent = '✓ 복사됨';
-                    setTimeout(function() { self.textContent = '복사'; }, 1500);
+                    self.textContent='✓ 복사됨'; setTimeout(function(){self.textContent='복사';},1500);
                 });
             });
         });
     });
-});
+
+    // ──────────────────────────────────────────
+    // STEP 4: 차트 설정 & 미리보기
+    // ──────────────────────────────────────────
+    var DEFAULT_SETTINGS = {
+        series: {
+            mmDev:            { color: '#3780bf', opacity: 0.6 },
+            mmBiz:            { color: '#db4052', opacity: 0.6 },
+            costDev:          { color: '#3780bf', opacity: 0.6 },
+            costBiz:          { color: '#db4052', opacity: 0.6 },
+            bar_labor:        { color: '#3780bf', opacity: 1.0 },
+            bar_marketing:    { color: '#f39c12', opacity: 1.0 },
+            bar_outsourcing:  { color: '#27ae60', opacity: 1.0 },
+            bar_depreciation: { color: '#8e44ad', opacity: 1.0 },
+            bar_server:       { color: '#16a085', opacity: 1.0 },
+            bar_other:        { color: '#7f8c8d', opacity: 1.0 }
+        },
+        axes: {
+            chart_y_auto: true, chart_y_max: '', chart_y_step: '',
+            cost_y_auto:  true, cost_y_max:  '', cost_y_step:  '',
+            bar_y_auto:   true, bar_y_max:   '', bar_y_step:   '',
+            x_format: 'YYYY-MM'
+        }
+    };
+    var currentSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+
+    var SERIES_DEFS = [
+        { group: 'MM 차트' },
+        { key: 'mmDev',            label: '개발 MM'     },
+        { key: 'mmBiz',            label: '사업 MM'     },
+        { group: '누적 개발비 차트' },
+        { key: 'costDev',          label: '개발비'      },
+        { key: 'costBiz',          label: '사업비'      },
+        { group: '막대 / 파이 차트' },
+        { key: 'bar_labor',        label: '인건비'      },
+        { key: 'bar_marketing',    label: '마케팅비'    },
+        { key: 'bar_outsourcing',  label: '외주비'      },
+        { key: 'bar_depreciation', label: '감가상각비'  },
+        { key: 'bar_server',       label: '서버비'      },
+        { key: 'bar_other',        label: '기타 운영비' }
+    ];
+
+    function renderSeriesTable() {
+        var tbody = document.querySelector('#series-table tbody');
+        var html = '';
+        SERIES_DEFS.forEach(function(def) {
+            if (def.group) {
+                html += '<tr class="group-hd"><td colspan="4">' + def.group + '</td></tr>';
+            } else {
+                var s = currentSettings.series[def.key];
+                html += '<tr>'
+                    + '<td>' + def.label + '</td>'
+                    + '<td><input type="color" class="s-color" data-key="' + def.key + '" value="' + s.color + '"></td>'
+                    + '<td><input type="range" class="op-slider" data-key="' + def.key + '" min="0" max="1" step="0.05" value="' + s.opacity + '"></td>'
+                    + '<td><span class="oval" id="oval-' + def.key + '">' + s.opacity.toFixed(2) + '</span></td>'
+                    + '</tr>';
+            }
+        });
+        tbody.innerHTML = html;
+        tbody.querySelectorAll('.s-color').forEach(function(el) {
+            el.addEventListener('input', function() {
+                currentSettings.series[this.dataset.key].color = this.value;
+                renderPreview();
+            });
+        });
+        tbody.querySelectorAll('.op-slider').forEach(function(el) {
+            el.addEventListener('input', function() {
+                var v = parseFloat(this.value);
+                currentSettings.series[this.dataset.key].opacity = v;
+                document.getElementById('oval-' + this.dataset.key).textContent = v.toFixed(2);
+                renderPreview();
+            });
+        });
+    }
+
+    function renderAxisSettings() {
+        var container = document.getElementById('axis-settings');
+        var axes = [
+            { prefix: 'chart', label: 'MM 차트 Y축' },
+            { prefix: 'cost',  label: '누적 개발비 Y축' },
+            { prefix: 'bar',   label: '막대 차트 Y축' }
+        ];
+        var html = '';
+        axes.forEach(function(a) {
+            var ax = currentSettings.axes;
+            var isAuto = ax[a.prefix + '_y_auto'];
+            html += '<div class="axis-block">'
+                + '<div class="axis-block-title">' + a.label + '</div>'
+                + '<div class="axis-row2"><label><input type="checkbox" class="ax-auto" data-prefix="' + a.prefix + '" ' + (isAuto ? 'checked' : '') + '> 자동 범위</label></div>'
+                + '<div class="ax-manual" id="ax-man-' + a.prefix + '" style="' + (isAuto ? 'display:none;' : '') + '">'
+                + '<div class="axis-row2"><label>최댓값</label><input type="number" class="ax-max" data-prefix="' + a.prefix + '" value="' + ax[a.prefix+'_y_max'] + '" placeholder="자동"></div>'
+                + '<div class="axis-row2"><label>스텝</label><input type="number" class="ax-step" data-prefix="' + a.prefix + '" value="' + ax[a.prefix+'_y_step'] + '" placeholder="자동"></div>'
+                + '</div></div>';
+        });
+        container.innerHTML = html;
+        container.querySelectorAll('.ax-auto').forEach(function(el) {
+            el.addEventListener('change', function() {
+                currentSettings.axes[this.dataset.prefix + '_y_auto'] = this.checked;
+                document.getElementById('ax-man-' + this.dataset.prefix).style.display = this.checked ? 'none' : '';
+                renderPreview();
+            });
+        });
+        container.querySelectorAll('.ax-max').forEach(function(el) {
+            el.addEventListener('input', function() { currentSettings.axes[this.dataset.prefix + '_y_max'] = this.value; renderPreview(); });
+        });
+        container.querySelectorAll('.ax-step').forEach(function(el) {
+            el.addEventListener('input', function() { currentSettings.axes[this.dataset.prefix + '_y_step'] = this.value; renderPreview(); });
+        });
+    }
+
+    function renderXFmt() {
+        var container = document.getElementById('xfmt-row');
+        var formats = ['YYYY-MM', 'YY.MM', 'YY년MM월'];
+        container.innerHTML = formats.map(function(f) {
+            return '<label><input type="radio" name="xformat" value="' + f + '" ' + (currentSettings.axes.x_format === f ? 'checked' : '') + '> ' + f + '</label>';
+        }).join('');
+        container.querySelectorAll('input[name="xformat"]').forEach(function(el) {
+            el.addEventListener('change', function() { currentSettings.axes.x_format = this.value; });
+        });
+    }
+
+    // ── Chart.js 미리보기 ──
+    function h2r(hex) {
+        hex = hex.replace('#','');
+        if (hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+        return { r:parseInt(hex.slice(0,2),16), g:parseInt(hex.slice(2,4),16), b:parseInt(hex.slice(4,6),16) };
+    }
+    function toRgba(hex, opacity) { var c=h2r(hex); return 'rgba('+c.r+','+c.g+','+c.b+','+opacity+')'; }
+    function toRgbStr(hex) { var c=h2r(hex); return 'rgb('+c.r+','+c.g+','+c.b+')'; }
+
+    var SLABELS = ['2024-01','2024-02','2024-03','2024-04','2024-05','2024-06','2024-07','2024-08'];
+    var SD1 = [5,8,12,10,14,11,9,13], SD2 = [2,3,4,3,5,4,3,4];
+    var SBAR = [[800,900,950,1000,1050,980,1020,1100],[200,250,200,300,250,200,280,300],[100,120,110,130,100,90,120,110],[50,60,50,60,55,50,60,65],[80,90,85,95,90,80,90,100],[50,40,60,50,55,60,45,55]];
+    var SPIE = [1100,300,110,60,90,55];
+    var BAR_KEYS  = ['bar_labor','bar_marketing','bar_outsourcing','bar_depreciation','bar_server','bar_other'];
+    var BAR_NAMES = ['인건비','마케팅비','외주비','감가상각비','서버비','기타 운영비'];
+    var previewInst = null, previewType = 'mm';
+
+    function renderPreview() {
+        var canvas = document.getElementById('previewChart');
+        if (!canvas) return;
+        if (previewInst) { previewInst.destroy(); previewInst = null; }
+        var ctx = canvas.getContext('2d');
+        var s = currentSettings.series, ax = currentSettings.axes;
+        if (previewType === 'mm' || previewType === 'cost') {
+            var k1 = previewType==='mm' ? 'mmDev' : 'costDev';
+            var k2 = previewType==='mm' ? 'mmBiz' : 'costBiz';
+            var l1 = previewType==='mm' ? '개발 MM' : '개발비';
+            var l2 = previewType==='mm' ? '사업 MM' : '사업비';
+            var pfx = previewType==='mm' ? 'chart' : 'cost';
+            var yOpts = { beginAtZero: true };
+            if (!ax[pfx+'_y_auto'] && ax[pfx+'_y_max']) yOpts.max = parseFloat(ax[pfx+'_y_max']);
+            if (!ax[pfx+'_y_auto'] && ax[pfx+'_y_step']) yOpts.ticks = { stepSize: parseFloat(ax[pfx+'_y_step']) };
+            previewInst = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: SLABELS,
+                    datasets: [
+                        { label: l1, data: SD1.map(function(v,i){return v+SD2[i];}), backgroundColor: toRgba(s[k1].color, s[k1].opacity), borderColor: toRgbStr(s[k1].color), fill: true, tension: 0.1 },
+                        { label: l2, data: SD2, backgroundColor: toRgba(s[k2].color, s[k2].opacity), borderColor: toRgbStr(s[k2].color), fill: true, tension: 0.1 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: yOpts, x: { ticks: { maxRotation: 45 } } } }
+            });
+        } else if (previewType === 'bar') {
+            var byOpts = { stacked: true, beginAtZero: true };
+            if (!ax.bar_y_auto && ax.bar_y_max) byOpts.max = parseFloat(ax.bar_y_max);
+            if (!ax.bar_y_auto && ax.bar_y_step) byOpts.ticks = { stepSize: parseFloat(ax.bar_y_step) };
+            previewInst = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: SLABELS,
+                    datasets: BAR_KEYS.map(function(k,i) {
+                        return { label: BAR_NAMES[i], data: SBAR[i], backgroundColor: toRgba(s[k].color, s[k].opacity), borderColor: toRgbStr(s[k].color), borderWidth: 0 };
+                    })
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: byOpts } }
+            });
+        } else if (previewType === 'pie') {
+            previewInst = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: BAR_NAMES,
+                    datasets: [{ data: SPIE, backgroundColor: BAR_KEYS.map(function(k){ return toRgba(s[k].color, s[k].opacity); }), borderColor: BAR_KEYS.map(function(k){ return toRgbStr(s[k].color); }), borderWidth: 1 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    }
+
+    renderSeriesTable();
+    renderAxisSettings();
+    renderXFmt();
+    renderPreview();
+
+    document.querySelectorAll('.preview-tab').forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('.preview-tab').forEach(function(t){ t.classList.remove('active'); });
+            this.classList.add('active');
+            previewType = this.dataset.type;
+            renderPreview();
+        });
+    });
+
+    document.getElementById('downloadSettingsBtn').addEventListener('click', function() {
+        var jsonStr = JSON.stringify(currentSettings, null, 2);
+        var blob = new Blob([jsonStr], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href=url; a.download='settings.json';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+        document.getElementById('settings-msg').innerHTML = '<div class="msg msg-success">✅ settings.json 다운로드 완료 — GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
+    });
+
+}); // end DOMContentLoaded
 </script>
 </body>
 </html>
