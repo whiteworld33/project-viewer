@@ -144,6 +144,10 @@
                         <div class="subsection-title">📅 X축 날짜 포맷</div>
                         <div class="xfmt-row" id="xfmt-row"></div>
                     </div>
+                    <div style="margin-top:12px;">
+                        <div class="subsection-title">🔤 도넛 중앙 텍스트</div>
+                        <div id="donut-text-settings"></div>
+                    </div>
                 </div>
             </div>
             <div>
@@ -154,6 +158,7 @@
                         <button class="preview-tab" data-type="cost">비용</button>
                         <button class="preview-tab" data-type="bar">막대</button>
                         <button class="preview-tab" data-type="pie">파이</button>
+                        <button class="preview-tab" data-type="donut">도넛</button>
                     </div>
                     <div id="preview-canvas-wrap"><canvas id="previewChart"></canvas></div>
                 </div>
@@ -405,7 +410,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 ['막대',      baseUrl+'/view.html?project='+enc+'&type=bar'],
                 ['파이(기준)',baseUrl+'/view.html?project='+enc+'&type=pie'],
                 ['파이(전달)',baseUrl+'/view.html?project='+enc+'&type=pie&month=prev'],
-                ['대시보드',  baseUrl+'/view.html?project='+enc+'&type=dashboard']
+                ['대시보드',  baseUrl+'/view.html?project='+enc+'&type=dashboard'],
+                ['도넛',       baseUrl+'/view.html?project='+enc+'&type=donut']
             ];
             urlHTML += '<div class="url-group"><h4>📌 '+name+'</h4>';
             urls.forEach(function(u) {
@@ -438,14 +444,19 @@ document.addEventListener('DOMContentLoaded', function() {
             bar_outsourcing:  { color: '#27ae60', opacity: 1.0 },
             bar_depreciation: { color: '#8e44ad', opacity: 1.0 },
             bar_server:       { color: '#16a085', opacity: 1.0 },
-            bar_other:        { color: '#7f8c8d', opacity: 1.0 }
+            bar_other:        { color: '#7f8c8d', opacity: 1.0 },
+            donut_period:     { color: '#3780bf', opacity: 0.85 },
+            donut_cost:       { color: '#27ae60', opacity: 0.85 },
+            donut_mm:         { color: '#e67e22', opacity: 0.85 },
+            donut_remain:     { color: '#e0e0e0', opacity: 1.0  }
         },
         axes: {
             chart_y_auto: true, chart_y_max: '', chart_y_step: '',
             cost_y_auto:  true, cost_y_max:  '', cost_y_step:  '',
             bar_y_auto:   true, bar_y_max:   '', bar_y_step:   '',
             x_format: 'YYYY-MM'
-        }
+        },
+        donut_text: { pct_color: '#2d3748', pct_size: 32, label_color: '#718096', label_size: 15 }
     };
     var currentSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
 
@@ -462,7 +473,12 @@ document.addEventListener('DOMContentLoaded', function() {
         { key: 'bar_outsourcing',  label: '외주비'      },
         { key: 'bar_depreciation', label: '감가상각비'  },
         { key: 'bar_server',       label: '서버비'      },
-        { key: 'bar_other',        label: '기타 운영비' }
+        { key: 'bar_other',        label: '기타 운영비' },
+        { group: '도넛 소진율 차트' },
+        { key: 'donut_period', label: '기간 소진율' },
+        { key: 'donut_cost',   label: '비용 소진율' },
+        { key: 'donut_mm',     label: 'MM 소진율'   },
+        { key: 'donut_remain', label: '잔여(회색)'  }
     ];
 
     function renderSeriesTable() {
@@ -610,12 +626,57 @@ document.addEventListener('DOMContentLoaded', function() {
                 },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
             });
+        } else if (previewType === 'donut') {
+            var dt = currentSettings.donut_text || {};
+            var sampleRatio = 0.747;
+            var centerPlugin = {
+                id: 'donutCenter',
+                afterDraw: function(chart) {
+                    var ctx2=chart.ctx, w=chart.width, h=chart.height, cx=w/2, cy=h/2;
+                    ctx2.save();
+                    ctx2.textAlign='center'; ctx2.textBaseline='middle';
+                    ctx2.fillStyle=dt.pct_color||'#2d3748';
+                    ctx2.font='bold '+(dt.pct_size||32)+'px sans-serif';
+                    ctx2.fillText((sampleRatio*100).toFixed(1)+'%', cx, cy-10);
+                    ctx2.fillStyle=dt.label_color||'#718096';
+                    ctx2.font=(dt.label_size||15)+'px sans-serif';
+                    ctx2.fillText('소진', cx, cy+(dt.pct_size||32)*0.7);
+                    ctx2.restore();
+                }
+            };
+            previewInst = new Chart(ctx, {
+                type: 'doughnut',
+                plugins: [centerPlugin],
+                data: {
+                    datasets: [{ data: [sampleRatio, 1-sampleRatio], backgroundColor: [toRgba(s['donut_period'].color, s['donut_period'].opacity), toRgba(s['donut_remain'].color, s['donut_remain'].opacity)], borderWidth: 0 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', rotation: -90, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+            });
         }
     }
 
+    function renderDonutText() {
+        var dt = currentSettings.donut_text || {};
+        var container = document.getElementById('donut-text-settings');
+        if (!container) return;
+        container.innerHTML =
+            '<div class="axis-row2" style="margin-bottom:6px;">'
+            + '<label style="min-width:70px;">% 색상</label><input type="color" id="dt-pct-color" value="'+(dt.pct_color||'#2d3748')+'">'
+            + '<label style="margin-left:8px;">크기</label><input type="number" id="dt-pct-size" value="'+(dt.pct_size||32)+'" style="width:60px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;">'
+            + '</div>'
+            + '<div class="axis-row2">'
+            + '<label style="min-width:70px;">소진 색상</label><input type="color" id="dt-lbl-color" value="'+(dt.label_color||'#718096')+'">'
+            + '<label style="margin-left:8px;">크기</label><input type="number" id="dt-lbl-size" value="'+(dt.label_size||15)+'" style="width:60px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;">'
+            + '</div>';
+        document.getElementById('dt-pct-color').addEventListener('input', function() { currentSettings.donut_text.pct_color = this.value; renderPreview(); });
+        document.getElementById('dt-pct-size').addEventListener('input', function() { currentSettings.donut_text.pct_size = parseInt(this.value)||32; renderPreview(); });
+        document.getElementById('dt-lbl-color').addEventListener('input', function() { currentSettings.donut_text.label_color = this.value; renderPreview(); });
+        document.getElementById('dt-lbl-size').addEventListener('input', function() { currentSettings.donut_text.label_size = parseInt(this.value)||15; renderPreview(); });
+    }
     renderSeriesTable();
     renderAxisSettings();
     renderXFmt();
+    renderDonutText();
     renderPreview();
 
     document.querySelectorAll('.preview-tab').forEach(function(tab) {
