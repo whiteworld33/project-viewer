@@ -411,7 +411,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 ['파이(기준)',baseUrl+'/view.html?project='+enc+'&type=pie'],
                 ['파이(전달)',baseUrl+'/view.html?project='+enc+'&type=pie&month=prev'],
                 ['대시보드',  baseUrl+'/view.html?project='+enc+'&type=dashboard'],
-                ['도넛',       baseUrl+'/view.html?project='+enc+'&type=donut']
+                ['도넛',       baseUrl+'/view.html?project='+enc+'&type=donut'],
+                ['도넛(기간)', baseUrl+'/view.html?project='+enc+'&type=donut&sub=period'],
+                ['도넛(비용)', baseUrl+'/view.html?project='+enc+'&type=donut&sub=cost'],
+                ['도넛(MM)',   baseUrl+'/view.html?project='+enc+'&type=donut&sub=mm']
             ];
             urlHTML += '<div class="url-group"><h4>📌 '+name+'</h4>';
             urls.forEach(function(u) {
