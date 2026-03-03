@@ -2,42 +2,58 @@
   "series": {
     "mmDev": {
       "color": "#3780bf",
-      "opacity": 0.45
+      "opacity": 0.6
     },
     "mmBiz": {
       "color": "#db4052",
-      "opacity": 0.45
+      "opacity": 0.6
     },
     "costDev": {
       "color": "#3780bf",
-      "opacity": 0.45
+      "opacity": 0.6
     },
     "costBiz": {
       "color": "#db4052",
-      "opacity": 0.45
+      "opacity": 0.6
     },
     "bar_labor": {
-      "color": "#f4ce3b",
+      "color": "#3780bf",
       "opacity": 1
     },
     "bar_marketing": {
-      "color": "#52bbea",
+      "color": "#f39c12",
       "opacity": 1
     },
     "bar_outsourcing": {
-      "color": "#5dc3ae",
+      "color": "#27ae60",
       "opacity": 1
     },
     "bar_depreciation": {
-      "color": "#bfbfbf",
+      "color": "#8e44ad",
       "opacity": 1
     },
     "bar_server": {
-      "color": "#b65cd2",
+      "color": "#16a085",
       "opacity": 1
     },
     "bar_other": {
-      "color": "#f35d5d",
+      "color": "#7f8c8d",
+      "opacity": 1
+    },
+    "donut_period": {
+      "color": "#3780bf",
+      "opacity": 0.85
+    },
+    "donut_cost": {
+      "color": "#27ae60",
+      "opacity": 0.85
+    },
+    "donut_mm": {
+      "color": "#e67e22",
+      "opacity": 0.85
+    },
+    "donut_remain": {
+      "color": "#e0e0e0",
       "opacity": 1
     }
   },
@@ -51,6 +67,12 @@
     "bar_y_auto": true,
     "bar_y_max": "",
     "bar_y_step": "",
-    "x_format": "YY년MM월"
+    "x_format": "YYYY-MM"
+  },
+  "donut_text": {
+    "pct_color": "#2d3748",
+    "pct_size": 32,
+    "label_color": "#718096",
+    "label_size": 15
   }
 }
