@@ -17,39 +17,39 @@
       "opacity": 0.6
     },
     "bar_labor": {
-      "color": "#3780bf",
+      "color": "#f4ce3b",
       "opacity": 1
     },
     "bar_marketing": {
-      "color": "#f39c12",
+      "color": "#52bbea",
       "opacity": 1
     },
     "bar_outsourcing": {
-      "color": "#27ae60",
+      "color": "#5dc3ae",
       "opacity": 1
     },
     "bar_depreciation": {
-      "color": "#8e44ad",
+      "color": "#bfbfbf",
       "opacity": 1
     },
     "bar_server": {
-      "color": "#16a085",
+      "color": "#b65cd2",
       "opacity": 1
     },
     "bar_other": {
-      "color": "#7f8c8d",
+      "color": "#f35d5d",
       "opacity": 1
     },
     "donut_period": {
-      "color": "#3780bf",
+      "color": "#c00000",
       "opacity": 0.85
     },
     "donut_cost": {
-      "color": "#27ae60",
+      "color": "#60c0ce",
       "opacity": 0.85
     },
     "donut_mm": {
-      "color": "#e67e22",
+      "color": "#89c7a1",
       "opacity": 0.85
     },
     "donut_remain": {
