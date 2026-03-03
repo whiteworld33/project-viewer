@@ -396,11 +396,13 @@
                 if (rows[ri2].date <= launchPrev)  cumMmLp  += rows[ri2].mmDev;
             }
             var mmRatio = cumMmLp > 0 ? Math.min(Math.max(cumMmCur / cumMmLp, 0), 1) : 0;
-            var donuts = [
-                { id:'donut-period', key:'donut_period', ratio:periodRatio, label:'기간' },
-                { id:'donut-cost',   key:'donut_cost',   ratio:costRatio,   label:'비용' },
-                { id:'donut-mm',     key:'donut_mm',     ratio:mmRatio,     label:'MM'   }
+            var subParam = params.get('sub');
+            var allDonuts = [
+                { id:'donut-period', key:'donut_period', ratio:periodRatio, label:'기간', sub:'period' },
+                { id:'donut-cost',   key:'donut_cost',   ratio:costRatio,   label:'비용', sub:'cost'   },
+                { id:'donut-mm',     key:'donut_mm',     ratio:mmRatio,     label:'MM',   sub:'mm'     }
             ];
+            var donuts = subParam ? allDonuts.filter(function(d){return d.sub===subParam;}) : allDonuts;
             donuts.forEach(function(d) {
                 var el = document.createElement('div');
                 el.id = d.id;
@@ -424,8 +426,8 @@
                     margin: { t: 20, b: 20, l: 20, r: 20 },
                     paper_bgcolor: '#ffffff',
                     annotations: [
-                        { x:0.5, y:0.57, xref:'paper', yref:'paper', text: pct+'%', showarrow:false, font:{ size:pctSize, color:pctColor }, xanchor:'center', yanchor:'middle' },
-                        { x:0.5, y:0.38, xref:'paper', yref:'paper', text: '소진',    showarrow:false, font:{ size:labelSize, color:labelColor }, xanchor:'center', yanchor:'middle' }
+                        { x:0.5, y:0.5,  xref:'paper', yref:'paper', text: pct+'%', showarrow:false, font:{ size:pctSize, color:pctColor }, xanchor:'center', yanchor:'middle' },
+                        { x:0.5, y:0.36, xref:'paper', yref:'paper', text: '소진',    showarrow:false, font:{ size:labelSize, color:labelColor }, xanchor:'center', yanchor:'middle' }
                     ]
                 }, { responsive: true, displayModeBar: false });
             });
@@ -452,6 +454,7 @@
                 + '<div class="dash-item full-width" id="d-bar"></div>'
                 + '<div class="dash-item" id="d-pie-cur"></div>'
                 + '<div class="dash-item" id="d-pie-prev"></div>'
+                + '<div class="dash-item full-width" id="d-donut" style="height:260px;"></div>'
                 + '</div>'
                 + '<div id="d-urls" class="dash-urls"></div>';
 
@@ -543,7 +546,10 @@
                         { label:'파이(기준)', url:base+'/view.html?project='+enc+'&type=pie'   },
                         { label:'파이(전달)', url:base+'/view.html?project='+enc+'&type=pie&month=prev' },
                         { label:'대시보드',   url:base+'/view.html?project='+enc+'&type=dashboard' },
-                        { label:'도넛',        url:base+'/view.html?project='+enc+'&type=donut' }
+                        { label:'도넛',        url:base+'/view.html?project='+enc+'&type=donut' },
+                        { label:'도넛(기간)',  url:base+'/view.html?project='+enc+'&type=donut&sub=period' },
+                        { label:'도넛(비용)',  url:base+'/view.html?project='+enc+'&type=donut&sub=cost' },
+                        { label:'도넛(MM)',    url:base+'/view.html?project='+enc+'&type=donut&sub=mm' }
                     ];
                     var html = '<h4>📋 노션 임베드 URL — ' + projectName + '</h4>';
                     urls.forEach(function(u) {
