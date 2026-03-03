@@ -75,14 +75,19 @@
             bar_outsourcing:  { color: '#27ae60', opacity: 1.0 },
             bar_depreciation: { color: '#8e44ad', opacity: 1.0 },
             bar_server:       { color: '#16a085', opacity: 1.0 },
-            bar_other:        { color: '#7f8c8d', opacity: 1.0 }
+            bar_other:        { color: '#7f8c8d', opacity: 1.0 },
+            donut_period:     { color: '#3780bf', opacity: 0.85 },
+            donut_cost:       { color: '#27ae60', opacity: 0.85 },
+            donut_mm:         { color: '#e67e22', opacity: 0.85 },
+            donut_remain:     { color: '#e0e0e0', opacity: 1.0  }
         },
         axes: {
             chart_y_auto: true, chart_y_max: '', chart_y_step: '',
             cost_y_auto:  true, cost_y_max:  '', cost_y_step:  '',
             bar_y_auto:   true, bar_y_max:   '', bar_y_step:   '',
             x_format: 'YYYY-MM'
-        }
+        },
+        donut_text: { pct_color: '#2d3748', pct_size: 32, label_color: '#718096', label_size: 15 }
     };
 
     Promise.all([
@@ -105,6 +110,10 @@
         });
         Object.keys(DEFAULT_SETTINGS.axes).forEach(function(k) {
             if (settings.axes[k] === undefined) settings.axes[k] = DEFAULT_SETTINGS.axes[k];
+        });
+        if (!settings.donut_text) settings.donut_text = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.donut_text));
+        Object.keys(DEFAULT_SETTINGS.donut_text).forEach(function(k) {
+            if (settings.donut_text[k] === undefined) settings.donut_text[k] = DEFAULT_SETTINGS.donut_text[k];
         });
 
         // ── 색상 헬퍼 ──
@@ -349,6 +358,84 @@
             window.addEventListener('resize', function() { Plotly.relayout(chartDiv, { width: window.innerWidth, height: window.innerHeight }); });
         }
 
+        // ──────── DONUT (소진율) ────────
+        else if (viewType === 'donut') {
+            contentDiv.classList.remove('table-mode');
+            contentDiv.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;width:100%;height:100%;gap:24px;padding:24px;box-sizing:border-box;"></div>';
+            var wrap = contentDiv.querySelector('div');
+            function monthDiff(ymA, ymB) {
+                var a=ymA.split('-'), b=ymB.split('-');
+                return (parseInt(b[0])*12+parseInt(b[1]))-(parseInt(a[0])*12+parseInt(a[1]));
+            }
+            function prevMonth(ym) {
+                var p=ym.split('-'), y=parseInt(p[0]), m=parseInt(p[1])-2;
+                if(m<0){m=11;y--;} return y+'-'+('0'+(m+1)).slice(-2);
+            }
+            var launchPrev = prevMonth(launch);
+            var dt = settings.donut_text || {};
+            var pctColor   = dt.pct_color   || '#2d3748';
+            var pctSize    = dt.pct_size    || 32;
+            var labelColor = dt.label_color || '#718096';
+            var labelSize  = dt.label_size  || 15;
+            // 1. 기간 소진율: elapsed / total months
+            var totalMonths   = monthDiff(kickoff, launch);
+            var elapsedMonths = monthDiff(kickoff, currentDate);
+            var periodRatio = totalMonths > 0 ? Math.min(Math.max(elapsedMonths / totalMonths, 0), 1) : 0;
+            // 2. 비용 소진율: 기준월 costGI / 런칭 전달 costGI
+            var currentRow = null, launchPrevRow = null;
+            for (var ri=0; ri<rows.length; ri++) {
+                if (rows[ri].date === currentDate) currentRow = rows[ri];
+                if (rows[ri].date === launchPrev)  launchPrevRow = rows[ri];
+            }
+            var costRatio = (currentRow && launchPrevRow && launchPrevRow.costGI > 0)
+                ? Math.min(Math.max(currentRow.costGI / launchPrevRow.costGI, 0), 1) : 0;
+            // 3. MM 소진율: 기준월까지 누적 mmDev / 런칭 전달까지 누적 mmDev
+            var cumMmCur=0, cumMmLp=0;
+            for (var ri2=0; ri2<rows.length; ri2++) {
+                if (rows[ri2].date <= currentDate) cumMmCur += rows[ri2].mmDev;
+                if (rows[ri2].date <= launchPrev)  cumMmLp  += rows[ri2].mmDev;
+            }
+            var mmRatio = cumMmLp > 0 ? Math.min(Math.max(cumMmCur / cumMmLp, 0), 1) : 0;
+            var donuts = [
+                { id:'donut-period', key:'donut_period', ratio:periodRatio, label:'기간' },
+                { id:'donut-cost',   key:'donut_cost',   ratio:costRatio,   label:'비용' },
+                { id:'donut-mm',     key:'donut_mm',     ratio:mmRatio,     label:'MM'   }
+            ];
+            donuts.forEach(function(d) {
+                var el = document.createElement('div');
+                el.id = d.id;
+                el.style.cssText = 'flex:1;max-width:360px;min-width:160px;height:100%;';
+                wrap.appendChild(el);
+            });
+            donuts.forEach(function(d) {
+                var pct = (d.ratio * 100).toFixed(1);
+                Plotly.newPlot(d.id, [{
+                    values: [d.ratio, 1 - d.ratio],
+                    type: 'pie',
+                    hole: 0.65,
+                    marker: { colors: [fc(d.key), fc('donut_remain')], line: { width: 0 } },
+                    textinfo: 'none',
+                    hoverinfo: 'none',
+                    showlegend: false,
+                    sort: false,
+                    direction: 'clockwise',
+                    rotation: 90
+                }], {
+                    margin: { t: 20, b: 20, l: 20, r: 20 },
+                    paper_bgcolor: '#ffffff',
+                    annotations: [
+                        { x:0.5, y:0.57, xref:'paper', yref:'paper', text: pct+'%', showarrow:false, font:{ size:pctSize, color:pctColor }, xanchor:'center', yanchor:'middle' },
+                        { x:0.5, y:0.38, xref:'paper', yref:'paper', text: '소진',    showarrow:false, font:{ size:labelSize, color:labelColor }, xanchor:'center', yanchor:'middle' }
+                    ]
+                }, { responsive: true, displayModeBar: false });
+            });
+            window.addEventListener('resize', function() {
+                donuts.forEach(function(d) {
+                    var el = document.getElementById(d.id);
+                    if (el) Plotly.relayout(d.id, { width: el.offsetWidth, height: el.offsetHeight });
+                });
+            });
+        }
         // ──────── DASHBOARD ────────
         else if (viewType === 'dashboard') {
             document.documentElement.style.overflow = 'auto';
@@ -455,7 +542,8 @@
                         { label:'막대',       url:base+'/view.html?project='+enc+'&type=bar'   },
                         { label:'파이(기준)', url:base+'/view.html?project='+enc+'&type=pie'   },
                         { label:'파이(전달)', url:base+'/view.html?project='+enc+'&type=pie&month=prev' },
-                        { label:'대시보드',   url:base+'/view.html?project='+enc+'&type=dashboard' }
+                        { label:'대시보드',   url:base+'/view.html?project='+enc+'&type=dashboard' },
+                        { label:'도넛',        url:base+'/view.html?project='+enc+'&type=donut' }
                     ];
                     var html = '<h4>📋 노션 임베드 URL — ' + projectName + '</h4>';
                     urls.forEach(function(u) {
