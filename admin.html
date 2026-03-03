@@ -164,6 +164,10 @@
                 </div>
             </div>
         </div>
+        <div class="btn-group" style="justify-content:flex-start; margin-bottom:8px;">
+            <label class="btn btn-secondary" style="cursor:pointer;font-size:14px;">📂 settings.json 불러오기<input type="file" id="importSettingsInput" accept=".json" style="display:none;"></label>
+            <span id="import-settings-status" style="font-size:13px;color:#888;margin-left:8px;align-self:center;"></span>
+        </div>
         <div class="btn-group">
             <button class="btn btn-primary" id="downloadSettingsBtn">📥 settings.json 다운로드</button>
         </div>
@@ -691,6 +695,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // ── settings.json 불러오기 ──
+    document.getElementById('importSettingsInput').addEventListener('change', function() {
+        var file = this.files[0];
+        if (!file) return;
+        var self = this;
+        var reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                var imported = JSON.parse(e.target.result);
+                if (!imported.series)     imported.series     = {};
+                if (!imported.axes)       imported.axes       = {};
+                if (!imported.donut_text) imported.donut_text = {};
+                Object.keys(DEFAULT_SETTINGS.series).forEach(function(k) {
+                    if (!imported.series[k]) imported.series[k] = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.series[k]));
+                });
+                Object.keys(DEFAULT_SETTINGS.axes).forEach(function(k) {
+                    if (imported.axes[k] === undefined) imported.axes[k] = DEFAULT_SETTINGS.axes[k];
+                });
+                Object.keys(DEFAULT_SETTINGS.donut_text).forEach(function(k) {
+                    if (imported.donut_text[k] === undefined) imported.donut_text[k] = DEFAULT_SETTINGS.donut_text[k];
+                });
+                currentSettings = imported;
+                renderSeriesTable();
+                renderAxisSettings();
+                renderXFmt();
+                renderDonutText();
+                renderPreview();
+                var st = document.getElementById('import-settings-status');
+                st.textContent = '✅ ' + file.name + ' 불러오기 완료';
+                st.style.color = '#155724';
+            } catch(err) {
+                var st = document.getElementById('import-settings-status');
+                st.textContent = '❌ 파일 오류: ' + err.message;
+                st.style.color = '#721c24';
+            }
+            self.value = '';
+        };
+        reader.readAsText(file);
+    });
     document.getElementById('downloadSettingsBtn').addEventListener('click', function() {
         var jsonStr = JSON.stringify(currentSettings, null, 2);
         var blob = new Blob([jsonStr], { type: 'application/json' });
