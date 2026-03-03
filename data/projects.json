@@ -941,5 +941,858 @@
         }
       }
     ]
+  },
+  "Project Everret": {
+    "kickoff": "2024-04",
+    "current": "2026-03",
+    "launch": "2028-09",
+    "rows": [
+      {
+        "date": "2024-04",
+        "mmDev": 70,
+        "mmBiz": 0,
+        "mmTotal": 70,
+        "costDev": 1068005952.5652174,
+        "costBiz": 0,
+        "costTotal": 1068005952.5652174,
+        "costGI": 1068005952.5652174,
+        "costBreakdown": {
+          "labor": 942586695.8115942,
+          "marketing": 0,
+          "outsourcing": 4057971.014492754,
+          "depreciation": 59750472,
+          "server": 0,
+          "other": 61610813.73913043
+        }
+      },
+      {
+        "date": "2024-05",
+        "mmDev": 51,
+        "mmBiz": 0,
+        "mmTotal": 51,
+        "costDev": 1750426533.0374396,
+        "costBiz": 0,
+        "costTotal": 1750426533.0374396,
+        "costGI": 1750426533.0374396,
+        "costBreakdown": {
+          "labor": 572785452,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 65202798,
+          "server": 0,
+          "other": 44432330.472222224
+        }
+      },
+      {
+        "date": "2024-06",
+        "mmDev": 61,
+        "mmBiz": 0,
+        "mmTotal": 61,
+        "costDev": 2910337378.119914,
+        "costBiz": 0,
+        "costTotal": 2910337378.119914,
+        "costGI": 2910337378.119914,
+        "costBreakdown": {
+          "labor": 1009990458.7628866,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 86115460.4742268,
+          "server": 0,
+          "other": 63804925.845360816
+        }
+      },
+      {
+        "date": "2024-07",
+        "mmDev": 89,
+        "mmBiz": 0,
+        "mmTotal": 89,
+        "costDev": 3840876898.7145553,
+        "costBiz": 0,
+        "costTotal": 3840876898.7145553,
+        "costGI": 3840876898.7145553,
+        "costBreakdown": {
+          "labor": 705470254.2983449,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 108783777.41666666,
+          "server": 0,
+          "other": 116285488.87962961
+        }
+      },
+      {
+        "date": "2024-08",
+        "mmDev": 97,
+        "mmBiz": 0,
+        "mmTotal": 97,
+        "costDev": 4825037192.267309,
+        "costBiz": 0,
+        "costTotal": 4825037192.267309,
+        "costGI": 4825037192.267309,
+        "costBreakdown": {
+          "labor": 716180999.974359,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 114125478.06557377,
+          "server": 0,
+          "other": 153853815.51282054
+        }
+      },
+      {
+        "date": "2024-09",
+        "mmDev": 105,
+        "mmBiz": 0,
+        "mmTotal": 105,
+        "costDev": 5953719657.962158,
+        "costBiz": 0,
+        "costTotal": 5953719657.962158,
+        "costGI": 5953719657.962158,
+        "costBreakdown": {
+          "labor": 888099795.3070866,
+          "marketing": 0,
+          "outsourcing": 2700000,
+          "depreciation": 110961012,
+          "server": 43789388,
+          "other": 83132270.38776301
+        }
+      },
+      {
+        "date": "2024-10",
+        "mmDev": 102,
+        "mmBiz": 0,
+        "mmTotal": 102,
+        "costDev": 6945995196.986548,
+        "costBiz": 0,
+        "costTotal": 6945995196.986548,
+        "costGI": 6945995196.986548,
+        "costBreakdown": {
+          "labor": 766849871.2926829,
+          "marketing": 0,
+          "outsourcing": 9200000,
+          "depreciation": 114480675,
+          "server": 24342850,
+          "other": 77402142.7317073
+        }
+      },
+      {
+        "date": "2024-11",
+        "mmDev": 107,
+        "mmBiz": 0,
+        "mmTotal": 107,
+        "costDev": 7940198302.577457,
+        "costBiz": 0,
+        "costTotal": 7940198302.577457,
+        "costGI": 7940198302.577457,
+        "costBreakdown": {
+          "labor": 783568224.6363636,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 110313128,
+          "server": 22433829.999999996,
+          "other": 77887922.95454545
+        }
+      },
+      {
+        "date": "2024-12",
+        "mmDev": 113,
+        "mmBiz": 0,
+        "mmTotal": 113,
+        "costDev": 9004523833.87456,
+        "costBiz": 0,
+        "costTotal": 9004523833.87456,
+        "costGI": 9004523833.87456,
+        "costBreakdown": {
+          "labor": 784429588.5652174,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 116951443,
+          "server": 21655732,
+          "other": 141288767.73188406
+        }
+      },
+      {
+        "date": "2025-01",
+        "mmDev": 116,
+        "mmBiz": 0,
+        "mmTotal": 116,
+        "costDev": 10201066764.245987,
+        "costBiz": 0,
+        "costTotal": 10201066764.245987,
+        "costGI": 10201066764.245987,
+        "costBreakdown": {
+          "labor": 968122362.0571429,
+          "marketing": 0,
+          "outsourcing": 9441500,
+          "depreciation": 117975204,
+          "server": 19344467,
+          "other": 81659397.31428571
+        }
+      },
+      {
+        "date": "2025-02",
+        "mmDev": 119,
+        "mmBiz": 0,
+        "mmTotal": 119,
+        "costDev": 11392401634.364868,
+        "costBiz": 0,
+        "costTotal": 11392401634.364868,
+        "costGI": 11392401634.364868,
+        "costBreakdown": {
+          "labor": 958182359.7622377,
+          "marketing": 0,
+          "outsourcing": 5058499.999999999,
+          "depreciation": 110455653,
+          "server": 19627908,
+          "other": 98010449.35664336
+        }
+      },
+      {
+        "date": "2025-03",
+        "mmDev": 119,
+        "mmBiz": 0,
+        "mmTotal": 119,
+        "costDev": 12765247553.505713,
+        "costBiz": 0,
+        "costTotal": 12765247553.505713,
+        "costGI": 12765247553.505713,
+        "costBreakdown": {
+          "labor": 1141682074.915493,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 118526987,
+          "server": 24299337,
+          "other": 88337520.22535212
+        }
+      },
+      {
+        "date": "2025-04",
+        "mmDev": 118,
+        "mmBiz": 0,
+        "mmTotal": 118,
+        "costDev": 14044479108.512804,
+        "costBiz": 0,
+        "costTotal": 14034779108.512804,
+        "costGI": 14044479108.512804,
+        "costBreakdown": {
+          "labor": 1019391364.9361702,
+          "marketing": 4424441,
+          "outsourcing": 0,
+          "depreciation": 114270394,
+          "server": 31425616,
+          "other": 109719739.07092199
+        }
+      },
+      {
+        "date": "2025-05",
+        "mmDev": 122,
+        "mmBiz": 0,
+        "mmTotal": 122,
+        "costDev": 15254139066.87832,
+        "costBiz": 0,
+        "costTotal": 15244304293.87832,
+        "costGI": 15254139066.87832,
+        "costBreakdown": {
+          "labor": 973723872.7793103,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 115157095,
+          "server": 34929938,
+          "other": 85849052.5862069
+        }
+      },
+      {
+        "date": "2025-06",
+        "mmDev": 132,
+        "mmBiz": 0,
+        "mmTotal": 132,
+        "costDev": 16713912423.87832,
+        "costBiz": 0,
+        "costTotal": 16704077650.87832,
+        "costGI": 16713912423.87832,
+        "costBreakdown": {
+          "labor": 1153848341,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 127728908,
+          "server": 40884196,
+          "other": 137311912
+        }
+      },
+      {
+        "date": "2025-07",
+        "mmDev": 136,
+        "mmBiz": 0,
+        "mmTotal": 136,
+        "costDev": 18103833175.87832,
+        "costBiz": 0,
+        "costTotal": 18093998402.87832,
+        "costGI": 18103833175.87832,
+        "costBreakdown": {
+          "labor": 1073310972,
+          "marketing": 65044,
+          "outsourcing": 0,
+          "depreciation": 131581473.99999999,
+          "server": 33836693,
+          "other": 151126569
+        }
+      },
+      {
+        "date": "2025-08",
+        "mmDev": 138,
+        "mmBiz": 0,
+        "mmTotal": 138,
+        "costDev": 19454945704.87832,
+        "costBiz": 0,
+        "costTotal": 19445110931.87832,
+        "costGI": 19454945704.87832,
+        "costBreakdown": {
+          "labor": 1077468957,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 132970085,
+          "server": 27003803,
+          "other": 113669684
+        }
+      },
+      {
+        "date": "2025-09",
+        "mmDev": 137,
+        "mmBiz": 0,
+        "mmTotal": 137,
+        "costDev": 20963429810.87832,
+        "costBiz": 0,
+        "costTotal": 20953595037.87832,
+        "costGI": 20963429810.87832,
+        "costBreakdown": {
+          "labor": 1238543775,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 129431047,
+          "server": 25069922,
+          "other": 115439362
+        }
+      },
+      {
+        "date": "2025-10",
+        "mmDev": 138,
+        "mmBiz": 0,
+        "mmTotal": 138,
+        "costDev": 22285360071.87832,
+        "costBiz": 0,
+        "costTotal": 22275525298.87832,
+        "costGI": 22285360071.87832,
+        "costBreakdown": {
+          "labor": 1057019007,
+          "marketing": 0,
+          "outsourcing": 0,
+          "depreciation": 133072631,
+          "server": 20067131,
+          "other": 111771492
+        }
+      },
+      {
+        "date": "2025-11",
+        "mmDev": 135,
+        "mmBiz": 0,
+        "mmTotal": 135,
+        "costDev": 23626796247.87832,
+        "costBiz": 0,
+        "costTotal": 23601771474.87832,
+        "costGI": 23626796247.87832,
+        "costBreakdown": {
+          "labor": 1048212203,
+          "marketing": 0,
+          "outsourcing": 27251063,
+          "depreciation": 126724356,
+          "server": 14972070.000000002,
+          "other": 124276484
+        }
+      },
+      {
+        "date": "2025-12",
+        "mmDev": 136,
+        "mmBiz": 0,
+        "mmTotal": 136,
+        "costDev": 25190838055.87832,
+        "costBiz": 0,
+        "costTotal": 25165813282.87832,
+        "costGI": 25190838055.87832,
+        "costBreakdown": {
+          "labor": 1187427318,
+          "marketing": 0,
+          "outsourcing": 18700000,
+          "depreciation": 133410600,
+          "server": 15300169,
+          "other": 209203721
+        }
+      },
+      {
+        "date": "2026-01",
+        "mmDev": 134,
+        "mmBiz": 1.05,
+        "mmTotal": 135.05,
+        "costDev": 26725043320.959023,
+        "costBiz": 9303549.233266914,
+        "costTotal": 26702608421.623695,
+        "costGI": 26734346870.19229,
+        "costBreakdown": {
+          "labor": 1085009272.8078299,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 131516341.17647058,
+          "server": 25563437.5,
+          "other": 107116213.59640266
+        }
+      },
+      {
+        "date": "2026-02",
+        "mmDev": 136,
+        "mmBiz": 2.1,
+        "mmTotal": 138.1,
+        "costDev": 28174436105.84593,
+        "costBiz": 27910647.699800745,
+        "costTotal": 28159092568.444107,
+        "costGI": 28202346753.54573,
+        "costBreakdown": {
+          "labor": 1111592837.8063579,
+          "marketing": 0,
+          "outsourcing": 65000000,
+          "depreciation": 133410600,
+          "server": 26081685.041666668,
+          "other": 113307662.03888154
+        }
+      },
+      {
+        "date": "2026-03",
+        "mmDev": 138,
+        "mmBiz": 3.1500000000000004,
+        "mmTotal": 141.15,
+        "costDev": 29651582865.950645,
+        "costBiz": 55821295.3996015,
+        "costTotal": 29649282131.711502,
+        "costGI": 29707404161.350246,
+        "costBreakdown": {
+          "labor": 1015329253.3038759,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 135304858.8235294,
+          "server": 26619499.79513889,
+          "other": 114893148.1821728
+        }
+      },
+      {
+        "date": "2026-04",
+        "mmDev": 140,
+        "mmBiz": 4.2,
+        "mmTotal": 144.2,
+        "costDev": 31087562086.499725,
+        "costBiz": 93035492.33266915,
+        "costTotal": 31101311038.117897,
+        "costGI": 31180597578.832394,
+        "costBreakdown": {
+          "labor": 1147269374.6959753,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 26812846.6947338,
+          "other": 119697881.51131049
+        }
+      },
+      {
+        "date": "2026-05",
+        "mmDev": 140,
+        "mmBiz": 5.25,
+        "mmTotal": 145.25,
+        "costDev": 32714271504.962566,
+        "costBiz": 139553238.49900374,
+        "costTotal": 32749332797.202614,
+        "costGI": 32853824743.46157,
+        "costBreakdown": {
+          "labor": 1157899326.6200664,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 26428449.252628278,
+          "other": 120182524.94308706
+        }
+      },
+      {
+        "date": "2026-06",
+        "mmDev": 140,
+        "mmBiz": 6.3,
+        "mmTotal": 146.3,
+        "costDev": 34045684553.279076,
+        "costBiz": 195374533.89860523,
+        "costTotal": 34109501557.04636,
+        "costGI": 34241059087.17768,
+        "costBreakdown": {
+          "labor": 1042284562.8087317,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 25719991.857013967,
+          "other": 121209376.00370516
+        }
+      },
+      {
+        "date": "2026-07",
+        "mmDev": 140,
+        "mmBiz": 7.35,
+        "mmTotal": 147.35,
+        "costDev": 35671657326.403915,
+        "costBiz": 260499378.53147364,
+        "costTotal": 35765791044.439865,
+        "costGI": 35932156704.93539,
+        "costBreakdown": {
+          "labor": 1161154208.1517673,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 24456308.178431798,
+          "other": 118163139.14758196
+        }
+      },
+      {
+        "date": "2026-08",
+        "mmDev": 140,
+        "mmBiz": 8.4,
+        "mmTotal": 148.4,
+        "costDev": 37126272161.08935,
+        "costBiz": 334927772.39760894,
+        "costTotal": 37255197016.0058,
+        "costGI": 37461199933.48695,
+        "costBreakdown": {
+          "labor": 1171784160.075858,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 23674609.443301115,
+          "other": 116956947.51921548
+        }
+      },
+      {
+        "date": "2026-09",
+        "mmDev": 140,
+        "mmBiz": 9.450000000000001,
+        "mmTotal": 149.45,
+        "costDev": 38643165624.259926,
+        "costBiz": 418659715.4970112,
+        "costTotal": 38815732605.93594,
+        "costGI": 39061825339.756935,
+        "costBreakdown": {
+          "labor": 1054704961.3753667,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 23397176.646909546,
+          "other": 116592207.5012416
+        }
+      },
+      {
+        "date": "2026-10",
+        "mmDev": 140,
+        "mmBiz": 10.500000000000002,
+        "mmTotal": 150.5,
+        "costDev": 40100629075.27523,
+        "costBiz": 511695207.8296804,
+        "costTotal": 40316884432.07136,
+        "costGI": 40612324283.10491,
+        "costBreakdown": {
+          "labor": 1175039041.6075587,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 23257781.200818673,
+          "other": 116967510.55986679
+        }
+      },
+      {
+        "date": "2026-11",
+        "mmDev": 140,
+        "mmBiz": 11.550000000000002,
+        "mmTotal": 151.55,
+        "costDev": 41749294598.0159,
+        "costBiz": 614034249.3956165,
+        "costTotal": 42013658239.76125,
+        "costGI": 42363328847.411514,
+        "costBreakdown": {
+          "labor": 1185668993.5316498,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 23523668.71755356,
+          "other": 117273742.84440954
+        }
+      },
+      {
+        "date": "2026-12",
+        "mmDev": 140,
+        "mmBiz": 12.600000000000003,
+        "mmTotal": 152.6,
+        "costDev": 43203619764.304985,
+        "costBiz": 725676840.1948196,
+        "costTotal": 43527613893.58652,
+        "costGI": 43929296604.4998,
+        "costBreakdown": {
+          "labor": 1067125359.9420017,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 24236301.944016356,
+          "other": 220764386.7560079
+        }
+      },
+      {
+        "date": "2027-01",
+        "mmDev": 140,
+        "mmBiz": 13.650000000000004,
+        "mmTotal": 153.65,
+        "costDev": 44852802114.54556,
+        "costBiz": 846622980.2272894,
+        "costTotal": 45235050054.138275,
+        "costGI": 45699425094.77285,
+        "costBreakdown": {
+          "labor": 1188923875.0633504,
+          "marketing": 0,
+          "outsourcing": 185320250,
+          "depreciation": 137199117.6470588,
+          "server": 24980979.689351052,
+          "other": 112758127.84081388
+        }
+      },
+      {
+        "date": "2027-02",
+        "mmDev": 140,
+        "mmBiz": 14.700000000000005,
+        "mmTotal": 154.70000000000002,
+        "costDev": 46336408853.74989,
+        "costBiz": 976872669.4930263,
+        "costTotal": 46781549265.041,
+        "costGI": 47313281523.24292,
+        "costBreakdown": {
+          "labor": 1199553826.9874418,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 24932441.53846364,
+          "other": 116921353.03136766
+        }
+      },
+      {
+        "date": "2027-03",
+        "mmDev": 140,
+        "mmBiz": 15.750000000000005,
+        "mmTotal": 155.75,
+        "costDev": 47880074670.1594,
+        "costBiz": 1116425907.9920301,
+        "costTotal": 48400079820.07509,
+        "costGI": 48996500578.15143,
+        "costBreakdown": {
+          "labor": 1079545758.5086365,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 24836671.246530056,
+          "other": 117084269.00728212
+        }
+      },
+      {
+        "date": "2027-04",
+        "mmDev": 140,
+        "mmBiz": 16.800000000000004,
+        "mmTotal": 156.8,
+        "costDev": 49369252378.47268,
+        "costBiz": 1265282695.7243009,
+        "costTotal": 49961463775.55928,
+        "costGI": 50634535074.19698,
+        "costBreakdown": {
+          "labor": 1202808708.5191424,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 24688102.200812653,
+          "other": 119481779.94626686
+        }
+      },
+      {
+        "date": "2027-05",
+        "mmDev": 140,
+        "mmBiz": 17.850000000000005,
+        "mmTotal": 157.85,
+        "costDev": 51048880649.527725,
+        "costBiz": 1423443032.6898384,
+        "costTotal": 51717978007.22803,
+        "costGI": 52472323682.21756,
+        "costBreakdown": {
+          "labor": 1213438660.4432333,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 24511040.159652557,
+          "other": 119479452.80510283
+        }
+      },
+      {
+        "date": "2027-06",
+        "mmDev": 140,
+        "mmBiz": 18.900000000000006,
+        "mmTotal": 158.9,
+        "costDev": 52426249820.67408,
+        "costBiz": 1590906918.8886428,
+        "costTotal": 53185650883.32235,
+        "costGI": 54017156739.56272,
+        "costBreakdown": {
+          "labor": 1091966157.0752716,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 24351256.06857125,
+          "other": 118852640.35545214
+        }
+      },
+      {
+        "date": "2027-07",
+        "mmDev": 140,
+        "mmBiz": 19.950000000000006,
+        "mmTotal": 159.95000000000002,
+        "costDev": 54106448087.152954,
+        "costBiz": 1767674354.3207142,
+        "costTotal": 54952007099.90293,
+        "costGI": 55874122441.47367,
+        "costBreakdown": {
+          "labor": 1216693541.9749339,
+          "marketing": 0,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 24237194.752867687,
+          "other": 117068412.10401572
+        }
+      },
+      {
+        "date": "2027-08",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 55617950464.15067,
+        "costBiz": 1953745338.9860525,
+        "costTotal": 56554320863.32177,
+        "costGI": 57571695803.13673,
+        "costBreakdown": {
+          "labor": 1227323493.899025,
+          "marketing": 0,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 24218935.300737347,
+          "other": 117760830.1508967
+        }
+      },
+      {
+        "date": "2027-09",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 70896176803.98158,
+        "costBiz": 2139816323.6513908,
+        "costTotal": 58194393344.34292,
+        "costGI": 73035993127.63298,
+        "costBreakdown": {
+          "labor": 1100246422.7863615,
+          "marketing": 13009231604.522156,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 729489622.6834853,
+          "other": 117059572.1918474
+        }
+      },
+      {
+        "date": "2027-10",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 73957227301.62067,
+        "costBiz": 2325887308.316729,
+        "costTotal": 59765698100.42606,
+        "costGI": 76283114609.9374,
+        "costBreakdown": {
+          "labor": 1221321819.7935312,
+          "marketing": 851071226.4640663,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 729489622.6834853,
+          "other": 116968711.05094236
+        }
+      },
+      {
+        "date": "2027-11",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 77308567519.21133,
+        "costBiz": 2511958292.9820676,
+        "costTotal": 61627323744.65454,
+        "costGI": 79820525812.1934,
+        "costBreakdown": {
+          "labor": 1331548613.1148214,
+          "marketing": 851071226.4640663,
+          "outsourcing": 185000000,
+          "depreciation": 137199117.6470588,
+          "server": 729489622.6834853,
+          "other": 117031637.68123731
+        }
+      },
+      {
+        "date": "2027-12",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 80470826899.85786,
+        "costBiz": 2698029277.647406,
+        "costTotal": 63309686496.87526,
+        "costGI": 83168856177.50526,
+        "costBreakdown": {
+          "labor": 1218007441.525784,
+          "marketing": 851071226.4640663,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 729489622.6834853,
+          "other": 221491972.32613635
+        }
+      },
+      {
+        "date": "2028-01",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 83822148664.73308,
+        "costBiz": 2884100262.3127446,
+        "costTotal": 65171325934.24393,
+        "costGI": 86706248927.04582,
+        "costBreakdown": {
+          "labor": 1335224422.5282867,
+          "marketing": 851071226.4640663,
+          "outsourcing": 185336262.5,
+          "depreciation": 137199117.6470588,
+          "server": 729489622.6834853,
+          "other": 113001113.05231509
+        }
+      },
+      {
+        "date": "2028-02",
+        "mmDev": 140,
+        "mmBiz": 21.000000000000007,
+        "mmTotal": 161,
+        "costDev": 87006496340.7064,
+        "costBiz": 3070171246.978083,
+        "costTotal": 66865982766.9963,
+        "costGI": 90076667587.6845,
+        "costBreakdown": {
+          "labor": 1344633731.101166,
+          "marketing": 851071226.4640663,
+          "outsourcing": 5000000,
+          "depreciation": 137199117.6470588,
+          "server": 729489622.6834853,
+          "other": 116953978.07754669
+        }
+      }
+    ]
   }
 }
