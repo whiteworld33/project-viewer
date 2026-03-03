@@ -411,6 +411,8 @@
             });
             donuts.forEach(function(d) {
                 var pct = (d.ratio * 100).toFixed(1);
+                var cEl = document.getElementById(d.id);
+                cEl.style.position = 'relative';
                 Plotly.newPlot(d.id, [{
                     values: [d.ratio, 1 - d.ratio],
                     type: 'pie',
@@ -424,12 +426,21 @@
                     rotation: 0
                 }], {
                     margin: { t: 20, b: 20, l: 20, r: 20 },
-                    paper_bgcolor: '#ffffff',
-                    annotations: [
-                        { x:0.5, y:0.5,  xref:'paper', yref:'paper', text: pct+'%', showarrow:false, font:{ size:pctSize, color:pctColor }, xanchor:'center', yanchor:'middle' },
-                        { x:0.5, y:0.30, xref:'paper', yref:'paper', text: '소진',    showarrow:false, font:{ size:labelSize, color:labelColor }, xanchor:'center', yanchor:'middle' }
-                    ]
-                }, { responsive: true, displayModeBar: false });
+                    paper_bgcolor: '#ffffff'
+                }, { responsive: true, displayModeBar: false }).then(function(gd) {
+                    function _addOv() {
+                        var old = cEl.querySelector('.dnc-ov'); if (old) old.remove();
+                        var h = gd._fullLayout.height, mt = gd._fullLayout.margin.t, mb = gd._fullLayout.margin.b;
+                        var tp = ((mt + (h - mt - mb) / 2) / h * 100).toFixed(2);
+                        var ov = document.createElement('div');
+                        ov.className = 'dnc-ov';
+                        ov.style.cssText = 'position:absolute;left:0;width:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;transform:translateY(-50%);top:' + tp + '%;';
+                        ov.innerHTML = '<span style="font-size:' + pctSize + 'px;font-weight:700;color:' + pctColor + ';line-height:1.2;">' + pct + '%</span><span style="font-size:' + labelSize + 'px;color:' + labelColor + ';line-height:1.2;margin-top:4px;">소진</span>';
+                        cEl.appendChild(ov);
+                    }
+                    _addOv();
+                    gd.on('plotly_relayout', _addOv);
+                });
             });
             window.addEventListener('resize', function() {
                 donuts.forEach(function(d) {
@@ -555,7 +566,9 @@
                         _dDonuts.forEach(function(d,idx){var sub=document.createElement('div');sub.id='d-donut-'+idx;sub.style.cssText='flex:1;height:240px;min-width:0;';_dWrap.appendChild(sub);});
                         _dDonuts.forEach(function(d,idx){
                             var pct=(d.ratio*100).toFixed(1);
-                            Plotly.newPlot('d-donut-'+idx,[{values:[d.ratio,1-d.ratio],type:'pie',hole:0.65,marker:{colors:[fc(d.key),fc('donut_remain')],line:{width:0}},textinfo:'none',hoverinfo:'none',showlegend:false,sort:false,direction:'clockwise',rotation:0}],{title:{text:d.label,font:{size:12},y:0.97},height:230,margin:{t:30,b:10,l:10,r:10},paper_bgcolor:'#ffffff',annotations:[{x:0.5,y:0.5,xref:'paper',yref:'paper',text:pct+'%',showarrow:false,font:{size:_pctSize,color:_pctColor},xanchor:'center',yanchor:'middle'},{x:0.5,y:0.30,xref:'paper',yref:'paper',text:'소진',showarrow:false,font:{size:_lblSize,color:_lblColor},xanchor:'center',yanchor:'middle'}]},{responsive:true,displayModeBar:false});
+                            var _cEl=document.getElementById('d-donut-'+idx);
+                            _cEl.style.position='relative';
+                            Plotly.newPlot('d-donut-'+idx,[{values:[d.ratio,1-d.ratio],type:'pie',hole:0.65,marker:{colors:[fc(d.key),fc('donut_remain')],line:{width:0}},textinfo:'none',hoverinfo:'none',showlegend:false,sort:false,direction:'clockwise',rotation:0}],{title:{text:d.label,font:{size:12},y:0.97},height:230,margin:{t:30,b:10,l:10,r:10},paper_bgcolor:'#ffffff'},{responsive:true,displayModeBar:false}).then(function(gd){function _addDOv(){var old=_cEl.querySelector('.dnc-ov');if(old)old.remove();var h=gd._fullLayout.height,mt=gd._fullLayout.margin.t,mb=gd._fullLayout.margin.b;var tp=((mt+(h-mt-mb)/2)/h*100).toFixed(2);var ov=document.createElement('div');ov.className='dnc-ov';ov.style.cssText='position:absolute;left:0;width:100%;pointer-events:none;display:flex;flex-direction:column;align-items:center;transform:translateY(-50%);top:'+tp+'%;';ov.innerHTML='<span style="font-size:'+_pctSize+'px;font-weight:700;color:'+_pctColor+';line-height:1.2;">'+pct+'%</span><span style="font-size:'+_lblSize+'px;color:'+_lblColor+';line-height:1.2;margin-top:4px;">소진</span>';_cEl.appendChild(ov);}_addDOv();gd.on('plotly_relayout',_addDOv);});
                         });
                     }
                 })();
