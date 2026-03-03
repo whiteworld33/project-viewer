@@ -421,13 +421,13 @@
                     showlegend: false,
                     sort: false,
                     direction: 'clockwise',
-                    rotation: 90
+                    rotation: 0
                 }], {
                     margin: { t: 20, b: 20, l: 20, r: 20 },
                     paper_bgcolor: '#ffffff',
                     annotations: [
                         { x:0.5, y:0.5,  xref:'paper', yref:'paper', text: pct+'%', showarrow:false, font:{ size:pctSize, color:pctColor }, xanchor:'center', yanchor:'middle' },
-                        { x:0.5, y:0.36, xref:'paper', yref:'paper', text: '소진',    showarrow:false, font:{ size:labelSize, color:labelColor }, xanchor:'center', yanchor:'middle' }
+                        { x:0.5, y:0.30, xref:'paper', yref:'paper', text: '소진',    showarrow:false, font:{ size:labelSize, color:labelColor }, xanchor:'center', yanchor:'middle' }
                     ]
                 }, { responsive: true, displayModeBar: false });
             });
@@ -533,6 +533,32 @@
                 }
                 renderPie('d-pie-cur',  currentDate);
                 renderPie('d-pie-prev', subOneM(currentDate));
+                (function() {
+                    function _mDiff(a,b){var ap=a.split('-'),bp=b.split('-');return(parseInt(bp[0])*12+parseInt(bp[1]))-(parseInt(ap[0])*12+parseInt(ap[1]));}
+                    function _prevM(ym){var p=ym.split('-'),y=parseInt(p[0]),m=parseInt(p[1])-2;if(m<0){m=11;y--;}return y+'-'+('0'+(m+1)).slice(-2);}
+                    var _lp=_prevM(launch);
+                    var _dt=settings.donut_text||{};
+                    var _pctColor=_dt.pct_color||'#2d3748',_pctSize=_dt.pct_size||32;
+                    var _lblColor=_dt.label_color||'#718096',_lblSize=_dt.label_size||15;
+                    var _totalM=_mDiff(kickoff,launch),_elapsedM=_mDiff(kickoff,currentDate);
+                    var _periodR=_totalM>0?Math.min(Math.max(_elapsedM/_totalM,0),1):0;
+                    var _curRow=null,_lpRow=null;
+                    for(var _i=0;_i<rows.length;_i++){if(rows[_i].date===currentDate)_curRow=rows[_i];if(rows[_i].date===_lp)_lpRow=rows[_i];}
+                    var _costR=(_curRow&&_lpRow&&_lpRow.costGI>0)?Math.min(Math.max(_curRow.costGI/_lpRow.costGI,0),1):0;
+                    var _cumCur=0,_cumLp=0;
+                    for(var _j=0;_j<rows.length;_j++){if(rows[_j].date<=currentDate)_cumCur+=rows[_j].mmDev;if(rows[_j].date<=_lp)_cumLp+=rows[_j].mmDev;}
+                    var _mmR=_cumLp>0?Math.min(Math.max(_cumCur/_cumLp,0),1):0;
+                    var _dDonuts=[{key:'donut_period',ratio:_periodR,label:'기간 소진율'},{key:'donut_cost',ratio:_costR,label:'비용 소진율'},{key:'donut_mm',ratio:_mmR,label:'MM 소진율'}];
+                    var _dWrap=document.getElementById('d-donut');
+                    if(_dWrap){
+                        _dWrap.style.cssText+='display:flex;align-items:center;gap:8px;padding:8px;';
+                        _dDonuts.forEach(function(d,idx){var sub=document.createElement('div');sub.id='d-donut-'+idx;sub.style.cssText='flex:1;height:240px;min-width:0;';_dWrap.appendChild(sub);});
+                        _dDonuts.forEach(function(d,idx){
+                            var pct=(d.ratio*100).toFixed(1);
+                            Plotly.newPlot('d-donut-'+idx,[{values:[d.ratio,1-d.ratio],type:'pie',hole:0.65,marker:{colors:[fc(d.key),fc('donut_remain')],line:{width:0}},textinfo:'none',hoverinfo:'none',showlegend:false,sort:false,direction:'clockwise',rotation:0}],{title:{text:d.label,font:{size:12},y:0.97},height:230,margin:{t:30,b:10,l:10,r:10},paper_bgcolor:'#ffffff',annotations:[{x:0.5,y:0.5,xref:'paper',yref:'paper',text:pct+'%',showarrow:false,font:{size:_pctSize,color:_pctColor},xanchor:'center',yanchor:'middle'},{x:0.5,y:0.30,xref:'paper',yref:'paper',text:'소진',showarrow:false,font:{size:_lblSize,color:_lblColor},xanchor:'center',yanchor:'middle'}]},{responsive:true,displayModeBar:false});
+                        });
+                    }
+                })();
 
                 (function() {
                     var p = window.location.href.split('?')[0];
