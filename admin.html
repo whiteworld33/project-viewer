@@ -97,6 +97,11 @@
     <!-- STEP 2: 프로젝트 선택 -->
     <div class="section">
         <div class="section-title">2️⃣ 프로젝트 선택 및 기간 설정 <span class="badge" id="project-count">0개 탐지</span></div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding:8px 12px;background:#f0f7ff;border-radius:6px;border:1px solid #b8d9f8;flex-wrap:wrap;">
+            <label style="font-size:13px;font-weight:600;color:#333;white-space:nowrap;">📅 공통 기준월</label>
+            <input type="month" id="globalCurrentInput" style="font-size:13px;padding:4px 8px;border:1px solid #ccc;border-radius:4px;">
+            <span id="globalCurrentLabel" style="font-size:12px;color:#888;">엑셀 파일을 업로드하면 요약 시트 E1에서 자동 감지됩니다.</span>
+        </div>
         <p style="font-size:12px; color:#888; margin-bottom:8px;">💡 <strong>비용 시트명</strong>: costDev 데이터를 가져올 시트명을 입력하세요. 비워두면 기존 시트 값을 사용합니다.</p>
         <div id="project-list">
             <p style="color:#aaa; font-size:14px;">엑셀 파일을 업로드하면 프로젝트 목록이 표시됩니다.</p>
@@ -226,6 +231,47 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
                     }
                 }
+                // ── '요약' 시트 파싱: 기준일(E1) + 런칭일(E열/Q열) ──
+                globalCurrentYM = null;
+                launchDateMap = {};
+                var sumWs = workbook.Sheets['요약'];
+                if (sumWs) {
+                    var sumData = XLSX.utils.sheet_to_json(sumWs, { header: 1, defval: null });
+                    // E1 = 기준일 (row 0, col 4)
+                    var e1val = (sumData[0] || [])[4];
+                    if (typeof e1val === 'number' && e1val > 30000 && e1val < 60000) {
+                        globalCurrentYM = excelDateToYM(e1val);
+                    } else if (typeof e1val === 'string') {
+                        var mE1 = e1val.match(/(\d{4})[\-\/](\d{1,2})/);
+                        if (mE1) globalCurrentYM = mE1[1] + '-' + ('0' + mE1[2]).slice(-2);
+                    }
+                    // E열(col 4) = 프로젝트명, Q열(col 16) = 런칭일
+                    for (var sri = 1; sri < sumData.length; sri++) {
+                        var srow = sumData[sri] || [];
+                        var spName = srow[4];
+                        var spLaunch = srow[16];
+                        if (!spName || typeof spName !== 'string') continue;
+                        spName = spName.toString().trim();
+                        if (!spName) continue;
+                        var spLaunchYM = null;
+                        if (typeof spLaunch === 'number' && spLaunch > 30000 && spLaunch < 60000) {
+                            spLaunchYM = excelDateToYM(spLaunch);
+                        } else if (typeof spLaunch === 'string') {
+                            var mSL = spLaunch.match(/(\d{4})[\-\/](\d{1,2})/);
+                            if (mSL) spLaunchYM = mSL[1] + '-' + ('0' + mSL[2]).slice(-2);
+                        }
+                        if (spLaunchYM) launchDateMap[spName] = spLaunchYM;
+                    }
+                }
+                // 공통 기준월 입력 필드 갱신
+                var gci = document.getElementById('globalCurrentInput');
+                if (gci) {
+                    var now2 = new Date();
+                    var todayYM = now2.getFullYear() + '-' + ('0' + (now2.getMonth() + 1)).slice(-2);
+                    gci.value = globalCurrentYM || todayYM;
+                    var gcLbl = document.getElementById('globalCurrentLabel');
+                    if (gcLbl) gcLbl.textContent = globalCurrentYM ? '✅ 요약 시트 E1에서 자동 감지됨. 변경 시 전체 프로젝트에 일괄 적용.' : '⚠️ 요약 시트에서 기준일을 찾지 못했습니다. 직접 입력해 주세요.';
+                }
                 var names = Object.keys(parsedProjects);
                 document.getElementById('file-status').textContent = file.name + ' (' + names.length + '개 프로젝트 탐지)';
                 document.getElementById('project-count').textContent = names.length + '개 탐지';
@@ -242,9 +288,13 @@ document.addEventListener('DOMContentLoaded', function() {
         var container = document.getElementById('project-list');
         if (names.length === 0) { container.innerHTML = '<p style="color:#aaa;">탐지된 프로젝트가 없습니다.</p>'; return; }
         var now = new Date();
-        var currentYM = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+        var todayYM = now.getFullYear() + '-' + ('0' + (now.getMonth() + 1)).slice(-2);
+        var gciEl = document.getElementById('globalCurrentInput');
+        var currentYM = (gciEl && gciEl.value) ? gciEl.value : (globalCurrentYM || todayYM);
         container.innerHTML = names.map(function(name) {
             var p = parsedProjects[name];
+            var launchYM = launchDateMap[name] || p.lastDate;
+            var launchBadge = launchDateMap[name] ? '' : ' title="요약 시트에서 런칭일을 찾지 못해 데이터 마지막 날짜를 사용합니다"';
             return '<div class="project-card" data-name="' + name + '">'
                 + '<input type="checkbox" class="proj-check">'
                 + '<span class="name">' + name + '</span>'
@@ -252,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 + '<div class="dates">'
                 + '<div><label>킥오프</label><input type="month" class="dt-kickoff" value="' + p.firstDate + '"></div>'
                 + '<div><label>기준월</label><input type="month" class="dt-current" value="' + currentYM + '"></div>'
-                + '<div><label>런칭</label><input type="month" class="dt-launch" value="' + p.lastDate + '"></div>'
+                + '<div' + launchBadge + '><label>런칭' + (launchDateMap[name] ? '' : ' ⚠️') + '</label><input type="month" class="dt-launch" value="' + launchYM + '"></div>'
                 + '</div>'
                 + '<div class="sheet-wrap"><label>비용 시트명</label><input type="text" class="dt-sheet" placeholder="시트명 입력"></div>'
                 + '</div>';
@@ -307,6 +357,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     document.getElementById('accountInput').addEventListener('input', updateProjectLinks);
     document.getElementById('repoInput').addEventListener('input', updateProjectLinks);
+    // 공통 기준월 변경 → 전체 프로젝트 카드 일괄 적용
+    document.getElementById('globalCurrentInput').addEventListener('change', function() {
+        var val = this.value;
+        if (!val) return;
+        document.querySelectorAll('.dt-current').forEach(function(el) { el.value = val; });
+    });
     document.getElementById('selectAllBtn').addEventListener('click', function() {
         document.querySelectorAll('.proj-check').forEach(function(cb) { cb.checked = true; cb.closest('.project-card').classList.add('selected'); });
         updateBtns();
