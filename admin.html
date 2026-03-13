@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>프로젝트 데이터 관리자</title>
+    <title>프로젝트 데이터 관리자 v2</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
     <style>
@@ -36,7 +36,23 @@
         .btn-success:hover { background: #218838; }
         .btn-secondary { background: #6c757d; color: #fff; }
         .btn-secondary:hover { background: #545b62; }
+        .btn-github { background: #24292e; color: #fff; }
+        .btn-github:hover { background: #000; }
+        .btn-danger { background: #dc3545; color: #fff; font-size: 13px; padding: 6px 14px; }
+        .btn-danger:hover { background: #b02a37; }
         .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .gh-config-box { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 6px; padding: 16px; margin-bottom: 8px; }
+        .gh-config-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+        .gh-config-row label { font-size: 13px; font-weight: 600; min-width: 90px; color: #444; }
+        .gh-config-row input[type="text"], .gh-config-row input[type="password"] { font-size: 13px; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; flex: 1; min-width: 200px; }
+        .gh-status { font-size: 13px; margin-top: 6px; padding: 6px 10px; border-radius: 4px; }
+        .gh-status.saved { background: #d4edda; color: #155724; }
+        .gh-status.empty { background: #fff3cd; color: #856404; }
+        .msg { padding: 10px 16px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
+        .msg-success { background: #d4edda; color: #155724; }
+        .msg-info { background: #d1ecf1; color: #0c5460; }
+        .msg-warn { background: #fff3cd; color: #856404; }
+        .msg-error { background: #f8d7da; color: #721c24; }
         #url-output { margin-top: 20px; }
         .url-group { margin-bottom: 16px; }
         .url-group h4 { margin-bottom: 6px; color: #333; }
@@ -44,17 +60,10 @@
         .url-row code { flex: 1; background: #f5f5f5; padding: 8px 12px; border-radius: 4px; font-size: 13px; word-break: break-all; border: 1px solid #e0e0e0; }
         .url-row .copy-btn { font-size: 12px; padding: 6px 12px; background: #17a2b8; color: #fff; border: none; border-radius: 4px; cursor: pointer; white-space: nowrap; }
         .url-row .copy-btn:hover { background: #138496; }
-        .msg { padding: 10px 16px; border-radius: 6px; margin-top: 12px; font-size: 14px; }
-        .msg-success { background: #d4edda; color: #155724; }
-        .msg-info { background: #d1ecf1; color: #0c5460; }
-        .msg-warn { background: #fff3cd; color: #856404; }
-        .msg-error { background: #f8d7da; color: #721c24; }
-        #storage-info { font-size: 13px; color: #888; text-align: center; margin-top: 10px; }
         .github-url-input { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
         .github-url-input label { font-weight: 500; font-size: 14px; white-space: nowrap; }
         .github-url-input input { font-size: 14px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; width: 200px; }
         .github-url-preview { font-size: 12px; color: #555; background: #f0f7ff; border: 1px solid #b8d9f8; border-radius: 4px; padding: 6px 10px; margin-bottom: 12px; word-break: break-all; }
-        /* ── 4️⃣ 차트 설정 ── */
         .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         @media (max-width: 720px) { .settings-grid { grid-template-columns: 1fr; } }
         .subsection-title { font-size: 13px; font-weight: 600; color: #444; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid #eee; }
@@ -77,13 +86,41 @@
         .preview-tab { font-size: 12px; padding: 4px 12px; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; background: #fff; }
         .preview-tab.active { background: #007bff; color: #fff; border-color: #007bff; }
         #preview-canvas-wrap { position: relative; height: 300px; }
+        .upload-progress { display: none; margin-top: 10px; }
+        .upload-progress .bar-wrap { background: #e9ecef; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 6px; }
+        .upload-progress .bar { background: #28a745; height: 100%; width: 0%; transition: width 0.3s; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>📊 프로젝트 데이터 관리자</h1>
-    <p class="subtitle">엑셀 → projects.json 다운로드 · 차트 설정 → settings.json 다운로드 → GitHub Pages → 노션 임베드</p>
+    <h1>📊 프로젝트 데이터 관리자 <span style="font-size:14px;background:#28a745;color:#fff;padding:2px 10px;border-radius:10px;vertical-align:middle;">v2</span></h1>
+    <p class="subtitle">엑셀 → GitHub 자동 업로드 → Cloudflare 자동 배포 → 노션 임베드</p>
+
+    <!-- STEP 0: GitHub 연결 설정 -->
+    <div class="section">
+        <div class="section-title">0️⃣ GitHub 연결 설정 <span class="badge" id="gh-saved-badge">미저장</span></div>
+        <div class="gh-config-box">
+            <div class="gh-config-row">
+                <label>계정명</label>
+                <input type="text" id="ghOwner" placeholder="예: nexon-dev">
+            </div>
+            <div class="gh-config-row">
+                <label>저장소명</label>
+                <input type="text" id="ghRepo" placeholder="예: project-viewer">
+            </div>
+            <div class="gh-config-row">
+                <label>PAT 토큰</label>
+                <input type="password" id="ghToken" placeholder="github_pat_xxxx...">
+            </div>
+            <div style="display:flex;gap:8px;margin-top:10px;">
+                <button class="btn btn-success" id="saveGhConfigBtn" style="font-size:13px;padding:7px 18px;">💾 저장</button>
+                <button class="btn btn-danger" id="clearGhConfigBtn">🗑 삭제</button>
+            </div>
+            <div class="gh-status empty" id="gh-status">⚠️ GitHub 설정이 저장되지 않았습니다. 위 정보를 입력 후 저장해 주세요.</div>
+        </div>
+        <p style="font-size:12px;color:#888;">💡 저장된 정보는 이 브라우저에만 보관되며 외부로 전송되지 않습니다. 공용 PC 사용 시 작업 후 반드시 [삭제]를 눌러주세요.</p>
+    </div>
 
     <!-- STEP 1: 파일 업로드 -->
     <div class="section">
@@ -112,29 +149,31 @@
         </div>
     </div>
 
-    <!-- STEP 3: JSON 다운로드 & URL 생성 -->
+    <!-- STEP 3: 업로드 & URL 생성 -->
     <div class="section">
-        <div class="section-title">3️⃣ JSON 다운로드 및 임베드 URL 생성</div>
+        <div class="section-title">3️⃣ 데이터 업로드 및 임베드 URL 생성</div>
         <div class="github-url-input">
-            <label>GitHub 계정명:</label>
-            <input type="text" id="accountInput" placeholder="예: whiteworld33">
-            <label style="margin-left:8px;">레포명:</label>
-            <input type="text" id="repoInput" placeholder="예: project-viewer">
+            <label>배포 URL:</label>
+            <input type="text" id="deployUrlInput" placeholder="예: https://project-summary.pages.dev" style="width:320px;">
         </div>
-        <div class="github-url-preview" id="urlPreview">🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong></div>
+        <div class="github-url-preview" id="urlPreview">🔗 생성될 기본 URL: <strong>배포 URL을 입력해 주세요</strong></div>
         <div class="btn-group">
+            <button class="btn btn-github" id="uploadBtn" disabled>🚀 GitHub에 바로 올리기</button>
             <button class="btn btn-success" id="downloadBtn" disabled>📥 projects.json 다운로드</button>
             <button class="btn btn-primary" id="generateUrlBtn" disabled>🔗 임베드 URL 생성</button>
         </div>
+        <div class="upload-progress" id="upload-progress">
+            <span id="upload-progress-text" style="font-size:13px;color:#555;">업로드 중...</span>
+            <div class="bar-wrap"><div class="bar" id="upload-bar"></div></div>
+        </div>
         <div id="save-msg"></div>
-        <div id="storage-info"></div>
         <div id="url-output"></div>
     </div>
 
     <!-- STEP 4: 차트 설정 & 미리보기 -->
     <div class="section">
         <div class="section-title">4️⃣ 차트 설정 &amp; 미리보기</div>
-        <p style="font-size:12px; color:#888; margin-bottom:14px;">💡 설정 완료 후 <strong>settings.json 다운로드</strong> → GitHub 레포 <code>data/</code> 폴더에 push 하면, 모든 프로젝트 차트에 공통 적용됩니다. settings.json이 없으면 기본값이 사용됩니다.</p>
+        <p style="font-size:12px; color:#888; margin-bottom:14px;">💡 설정 완료 후 <strong>settings.json GitHub에 올리기</strong> 또는 다운로드 → push 하면 모든 프로젝트 차트에 공통 적용됩니다.</p>
         <div class="settings-grid">
             <div>
                 <div class="subsection-title">📊 시리즈 색상 / 투명도</div>
@@ -174,6 +213,7 @@
             <span id="import-settings-status" style="font-size:13px;color:#888;margin-left:8px;align-self:center;"></span>
         </div>
         <div class="btn-group">
+            <button class="btn btn-github" id="uploadSettingsBtn">🚀 settings.json GitHub에 올리기</button>
             <button class="btn btn-primary" id="downloadSettingsBtn">📥 settings.json 다운로드</button>
         </div>
         <div id="settings-msg"></div>
@@ -182,6 +222,123 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+
+    // ══════════════════════════════════════════
+    // 업로드 목적지 설정 (향후 서버 전환 시 이 부분만 수정)
+    // 현재: 'github' / 팀 서버 전환 시: 'server'
+    var UPLOAD_TARGET = 'github';
+    // var SERVER_UPLOAD_URL = 'https://your-team-server.com/api/upload'; // 팀 서버 전환 시 사용
+    // ══════════════════════════════════════════
+
+    var LS_KEY_OWNER = 'gh_owner';
+    var LS_KEY_REPO  = 'gh_repo';
+    var LS_KEY_TOKEN = 'gh_token';
+    var LS_KEY_DEPLOY = 'deploy_url';
+
+    // ── LocalStorage 불러오기 ──
+    function loadGhConfig() {
+        var owner = localStorage.getItem(LS_KEY_OWNER) || '';
+        var repo  = localStorage.getItem(LS_KEY_REPO)  || '';
+        var token = localStorage.getItem(LS_KEY_TOKEN) || '';
+        document.getElementById('ghOwner').value = owner;
+        document.getElementById('ghRepo').value  = repo;
+        document.getElementById('ghToken').value = token;
+        updateGhStatus();
+    }
+    function updateGhStatus() {
+        var owner = localStorage.getItem(LS_KEY_OWNER);
+        var repo  = localStorage.getItem(LS_KEY_REPO);
+        var token = localStorage.getItem(LS_KEY_TOKEN);
+        var badge = document.getElementById('gh-saved-badge');
+        var status = document.getElementById('gh-status');
+        if (owner && repo && token) {
+            badge.textContent = '✅ 저장됨';
+            badge.style.background = '#28a745';
+            badge.style.color = '#fff';
+            status.className = 'gh-status saved';
+            status.textContent = '✅ GitHub 연결 정보가 저장되어 있습니다. (' + owner + '/' + repo + ')';
+        } else {
+            badge.textContent = '미저장';
+            badge.style.background = '';
+            badge.style.color = '';
+            status.className = 'gh-status empty';
+            status.textContent = '⚠️ GitHub 설정이 저장되지 않았습니다. 위 정보를 입력 후 저장해 주세요.';
+        }
+    }
+    document.getElementById('saveGhConfigBtn').addEventListener('click', function() {
+        var owner = document.getElementById('ghOwner').value.trim();
+        var repo  = document.getElementById('ghRepo').value.trim();
+        var token = document.getElementById('ghToken').value.trim();
+        if (!owner || !repo || !token) { alert('계정명, 저장소명, PAT 토큰을 모두 입력해 주세요.'); return; }
+        localStorage.setItem(LS_KEY_OWNER, owner);
+        localStorage.setItem(LS_KEY_REPO,  repo);
+        localStorage.setItem(LS_KEY_TOKEN, token);
+        updateGhStatus();
+    });
+    document.getElementById('clearGhConfigBtn').addEventListener('click', function() {
+        if (!confirm('저장된 GitHub 연결 정보를 삭제하시겠습니까?')) return;
+        localStorage.removeItem(LS_KEY_OWNER);
+        localStorage.removeItem(LS_KEY_REPO);
+        localStorage.removeItem(LS_KEY_TOKEN);
+        document.getElementById('ghOwner').value = '';
+        document.getElementById('ghRepo').value  = '';
+        document.getElementById('ghToken').value = '';
+        updateGhStatus();
+    });
+
+    // ── GitHub API 업로드 함수 ──
+    function uploadToGitHub(filePath, content, commitMessage, onProgress) {
+        var owner = localStorage.getItem(LS_KEY_OWNER);
+        var repo  = localStorage.getItem(LS_KEY_REPO);
+        var token = localStorage.getItem(LS_KEY_TOKEN);
+        if (!owner || !repo || !token) {
+            return Promise.reject(new Error('GitHub 연결 정보가 없습니다. 0️⃣ 섹션에서 설정을 저장해 주세요.'));
+        }
+        var apiUrl = 'https://api.github.com/repos/' + owner + '/' + repo + '/contents/' + filePath;
+        if (onProgress) onProgress(20);
+        // 현재 파일의 SHA 가져오기 (업데이트 시 필요)
+        return fetch(apiUrl, {
+            headers: {
+                'Authorization': 'token ' + token,
+                'Accept': 'application/vnd.github.v3+json'
+            }
+        }).then(function(r) {
+            return r.ok ? r.json() : null;
+        }).then(function(existing) {
+            if (onProgress) onProgress(50);
+            var body = {
+                message: commitMessage,
+                content: btoa(unescape(encodeURIComponent(content)))
+            };
+            if (existing && existing.sha) body.sha = existing.sha;
+            return fetch(apiUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': 'token ' + token,
+                    'Accept': 'application/vnd.github.v3+json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(body)
+            });
+        }).then(function(r) {
+            if (onProgress) onProgress(90);
+            if (!r.ok) return r.json().then(function(e) { throw new Error(e.message || 'GitHub API 오류 (HTTP ' + r.status + ')'); });
+            return r.json();
+        }).then(function(result) {
+            if (onProgress) onProgress(100);
+            return result;
+        });
+    }
+
+    // ── 배포 URL 자동 불러오기 ──
+    var savedDeploy = localStorage.getItem(LS_KEY_DEPLOY);
+    if (savedDeploy) document.getElementById('deployUrlInput').value = savedDeploy;
+    document.getElementById('deployUrlInput').addEventListener('input', function() {
+        localStorage.setItem(LS_KEY_DEPLOY, this.value.trim());
+        updateProjectLinks();
+    });
+
+    loadGhConfig();
 
     function excelDateToYM(serial) {
         if (typeof serial !== 'number') return null;
@@ -193,8 +350,9 @@ document.addEventListener('DOMContentLoaded', function() {
     var parsedProjects = {};
     var workbook = null;
     var lastSaveData = null;
+    var globalCurrentYM = null;
+    var launchDateMap = {};
 
-    // ── STEP 1: 파일 업로드 ──
     document.getElementById('fileInput').addEventListener('change', function() {
         var file = this.files[0];
         if (!file) return;
@@ -226,51 +384,34 @@ document.addEventListener('DOMContentLoaded', function() {
                             var row = sheet[r] || [];
                             rows.push({ date: ym, mmDev: row[j+1]||0, mmBiz: row[j+2]||0, mmTotal: row[j+3]||0, costDev: row[j+4]||0, costBiz: row[j+5]||0, costTotal: row[j+6]||0 });
                         }
-                        if (rows.length > 0) {
-                            parsedProjects[cellVal] = { rows: rows, firstDate: rows[0].date, lastDate: rows[rows.length-1].date };
-                        }
+                        if (rows.length > 0) parsedProjects[cellVal] = { rows: rows, firstDate: rows[0].date, lastDate: rows[rows.length-1].date };
                     }
                 }
-                // ── '요약' 시트 파싱: 기준일(E1) + 런칭일(E열/Q열) ──
-                globalCurrentYM = null;
-                launchDateMap = {};
+                globalCurrentYM = null; launchDateMap = {};
                 var sumWs = workbook.Sheets['요약'];
                 if (sumWs) {
                     var sumData = XLSX.utils.sheet_to_json(sumWs, { header: 1, defval: null });
-                    // E1 = 기준일 (row 0, col 4)
                     var e1val = (sumData[0] || [])[4];
-                    if (typeof e1val === 'number' && e1val > 30000 && e1val < 60000) {
-                        globalCurrentYM = excelDateToYM(e1val);
-                    } else if (typeof e1val === 'string') {
-                        var mE1 = e1val.match(/(\d{4})[\-\/](\d{1,2})/);
-                        if (mE1) globalCurrentYM = mE1[1] + '-' + ('0' + mE1[2]).slice(-2);
-                    }
-                    // E열(col 4) = 프로젝트명, Q열(col 16) = 런칭일
+                    if (typeof e1val === 'number' && e1val > 30000 && e1val < 60000) globalCurrentYM = excelDateToYM(e1val);
+                    else if (typeof e1val === 'string') { var mE1 = e1val.match(/(\d{4})[\-\/](\d{1,2})/); if (mE1) globalCurrentYM = mE1[1] + '-' + ('0' + mE1[2]).slice(-2); }
                     for (var sri = 1; sri < sumData.length; sri++) {
                         var srow = sumData[sri] || [];
-                        var spName = srow[4];
-                        var spLaunch = srow[16];
+                        var spName = srow[4]; var spLaunch = srow[16];
                         if (!spName || typeof spName !== 'string') continue;
-                        spName = spName.toString().trim();
-                        if (!spName) continue;
+                        spName = spName.toString().trim(); if (!spName) continue;
                         var spLaunchYM = null;
-                        if (typeof spLaunch === 'number' && spLaunch > 30000 && spLaunch < 60000) {
-                            spLaunchYM = excelDateToYM(spLaunch);
-                        } else if (typeof spLaunch === 'string') {
-                            var mSL = spLaunch.match(/(\d{4})[\-\/](\d{1,2})/);
-                            if (mSL) spLaunchYM = mSL[1] + '-' + ('0' + mSL[2]).slice(-2);
-                        }
+                        if (typeof spLaunch === 'number' && spLaunch > 30000 && spLaunch < 60000) spLaunchYM = excelDateToYM(spLaunch);
+                        else if (typeof spLaunch === 'string') { var mSL = spLaunch.match(/(\d{4})[\-\/](\d{1,2})/); if (mSL) spLaunchYM = mSL[1] + '-' + ('0' + mSL[2]).slice(-2); }
                         if (spLaunchYM) launchDateMap[spName] = spLaunchYM;
                     }
                 }
-                // 공통 기준월 입력 필드 갱신
                 var gci = document.getElementById('globalCurrentInput');
                 if (gci) {
                     var now2 = new Date();
                     var todayYM = now2.getFullYear() + '-' + ('0' + (now2.getMonth() + 1)).slice(-2);
                     gci.value = globalCurrentYM || todayYM;
                     var gcLbl = document.getElementById('globalCurrentLabel');
-                    if (gcLbl) gcLbl.textContent = globalCurrentYM ? '✅ 요약 시트 E1에서 자동 감지됨. 변경 시 전체 프로젝트에 일괄 적용.' : '⚠️ 요약 시트에서 기준일을 찾지 못했습니다. 직접 입력해 주세요.';
+                    if (gcLbl) gcLbl.textContent = globalCurrentYM ? '✅ 요약 시트 E1에서 자동 감지됨.' : '⚠️ 요약 시트에서 기준일을 찾지 못했습니다.';
                 }
                 var names = Object.keys(parsedProjects);
                 document.getElementById('file-status').textContent = file.name + ' (' + names.length + '개 프로젝트 탐지)';
@@ -278,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 renderProjectList(names);
             } catch(err) {
                 document.getElementById('file-status').textContent = '오류: ' + err.message;
-                document.getElementById('project-list').innerHTML = '<p style="color:red;">' + err.message + '</p>';
             }
         };
         reader.readAsArrayBuffer(file);
@@ -328,21 +468,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateBtns() {
         var checked = document.querySelectorAll('.proj-check:checked').length;
+        var hasGh = !!(localStorage.getItem(LS_KEY_TOKEN));
         document.getElementById('downloadBtn').disabled = (checked === 0);
         document.getElementById('generateUrlBtn').disabled = (checked === 0);
+        document.getElementById('uploadBtn').disabled = (checked === 0 || !hasGh);
     }
 
     function getBaseUrl() {
-        var account = document.getElementById('accountInput').value.trim().replace(/\/+$/, '');
-        var repo    = document.getElementById('repoInput').value.trim().replace(/\/+$/, '');
-        if (!account || !repo) return '';
-        return 'https://' + account + '.github.io/' + repo;
+        var url = document.getElementById('deployUrlInput').value.trim().replace(/\/+$/, '');
+        if (!url) return '';
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        return url;
     }
     function updateUrlPreview() {
         var base = getBaseUrl();
         var preview = document.getElementById('urlPreview');
-        if (base) { preview.innerHTML = '🔗 생성될 기본 URL: <strong>' + base + '</strong>'; }
-        else { preview.innerHTML = '🔗 생성될 기본 URL: <strong>계정명과 레포명을 입력해 주세요</strong>'; }
+        if (base) preview.innerHTML = '🔗 생성될 기본 URL: <strong>' + base + '</strong>';
+        else preview.innerHTML = '🔗 생성될 기본 URL: <strong>배포 URL을 입력해 주세요</strong>';
     }
     function updateProjectLinks() {
         var base = getBaseUrl();
@@ -355,9 +497,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         updateUrlPreview();
     }
-    document.getElementById('accountInput').addEventListener('input', updateProjectLinks);
-    document.getElementById('repoInput').addEventListener('input', updateProjectLinks);
-    // 공통 기준월 변경 → 전체 프로젝트 카드 일괄 적용
+
     document.getElementById('globalCurrentInput').addEventListener('change', function() {
         var val = this.value;
         if (!val) return;
@@ -374,27 +514,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getCostDevMap(sheetName, kickoff, launch) {
         if (!sheetName || !workbook) return null;
-        var ws = workbook.Sheets[sheetName];
-        if (!ws) return null;
+        var ws = workbook.Sheets[sheetName]; if (!ws) return null;
         var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
         if (sheet.length < 38) return null;
-        var row2 = sheet[1] || [], row38 = sheet[37] || [];
-        var map = {};
+        var row2 = sheet[1] || [], row38 = sheet[37] || [], map = {};
         for (var c = 0; c < row2.length; c++) {
             var cell = row2[c]; if (cell === null || cell === undefined) continue;
             var ym = null;
-            if (typeof cell === 'number' && cell > 30000 && cell < 60000) { ym = excelDateToYM(cell); }
+            if (typeof cell === 'number' && cell > 30000 && cell < 60000) ym = excelDateToYM(cell);
             else if (typeof cell === 'string') { var m = cell.match(/(\d{4})[\-\/](\d{1,2})/); if (m) ym = m[1] + '-' + ('0' + m[2]).slice(-2); }
             if (!ym) continue;
-            if (ym >= kickoff && ym <= launch) { map[ym] = (row38[c] !== null && row38[c] !== undefined) ? row38[c] : 0; }
+            if (ym >= kickoff && ym <= launch) map[ym] = (row38[c] !== null && row38[c] !== undefined) ? row38[c] : 0;
         }
         return map;
     }
-
     function getBreakdownMap(sheetName, kickoff, launch) {
         if (!sheetName || !workbook) return null;
-        var ws = workbook.Sheets[sheetName];
-        if (!ws) return null;
+        var ws = workbook.Sheets[sheetName]; if (!ws) return null;
         var sheet = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null });
         if (sheet.length < 64) return null;
         var row2=sheet[1]||[], rLbr=sheet[38]||[], rMkt=sheet[44]||[], rOut=sheet[46]||[], rDep=sheet[52]||[], rSrv=sheet[58]||[], rOth=sheet[63]||[];
@@ -402,36 +538,30 @@ document.addEventListener('DOMContentLoaded', function() {
         for (var c = 0; c < row2.length; c++) {
             var cell = row2[c]; if (cell===null||cell===undefined) continue;
             var ym = null;
-            if (typeof cell==='number' && cell>30000 && cell<60000) { ym=excelDateToYM(cell); }
+            if (typeof cell==='number' && cell>30000 && cell<60000) ym=excelDateToYM(cell);
             else if (typeof cell==='string') { var m2=cell.match(/(\d{4})[\-\/](\d{1,2})/); if(m2) ym=m2[1]+'-'+('0'+m2[2]).slice(-2); }
             if (!ym) continue;
-            if (ym>=kickoff && ym<=launch) {
-                bdMap[ym] = { labor:(rLbr[c]!=null)?rLbr[c]:0, marketing:(rMkt[c]!=null)?rMkt[c]:0, outsourcing:(rOut[c]!=null)?rOut[c]:0, depreciation:(rDep[c]!=null)?rDep[c]:0, server:(rSrv[c]!=null)?rSrv[c]:0, other:(rOth[c]!=null)?rOth[c]:0 };
-            }
+            if (ym>=kickoff && ym<=launch) bdMap[ym] = { labor:(rLbr[c]!=null)?rLbr[c]:0, marketing:(rMkt[c]!=null)?rMkt[c]:0, outsourcing:(rOut[c]!=null)?rOut[c]:0, depreciation:(rDep[c]!=null)?rDep[c]:0, server:(rSrv[c]!=null)?rSrv[c]:0, other:(rOth[c]!=null)?rOth[c]:0 };
         }
         return bdMap;
     }
-
     function collectSelectedData() {
-        var cards = document.querySelectorAll('.project-card');
-        var saveData = {}, warnings = [];
+        var cards = document.querySelectorAll('.project-card'), saveData = {}, warnings = [];
         cards.forEach(function(card) {
-            var cb = card.querySelector('.proj-check');
-            if (!cb.checked) return;
+            var cb = card.querySelector('.proj-check'); if (!cb.checked) return;
             var name=card.getAttribute('data-name'), kickoff=card.querySelector('.dt-kickoff').value, current=card.querySelector('.dt-current').value, launch=card.querySelector('.dt-launch').value, sheetName=card.querySelector('.dt-sheet').value.trim();
-            var proj = parsedProjects[name];
-            if (!proj) return;
+            var proj = parsedProjects[name]; if (!proj) return;
             var costDevMap=null, breakdownMap=null;
             if (sheetName) {
                 costDevMap = getCostDevMap(sheetName, kickoff, launch);
-                if (!costDevMap) warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다. 기존 costDev 값을 사용합니다.');
+                if (!costDevMap) warnings.push('⚠️ [' + name + '] 시트 "' + sheetName + '" 를 찾을 수 없습니다.');
                 breakdownMap = getBreakdownMap(sheetName, kickoff, launch);
             }
             var cumCostDev = 0;
             var filtered = proj.rows.filter(function(r){ return r.date>=kickoff && r.date<=launch; }).map(function(r) {
                 var costDev;
                 if (costDevMap) { var monthly=(costDevMap[r.date]!==undefined)?costDevMap[r.date]:0; cumCostDev+=monthly; costDev=cumCostDev; }
-                else { costDev=r.costDev; }
+                else costDev=r.costDev;
                 return { date:r.date, mmDev:r.mmDev, mmBiz:r.mmBiz, mmTotal:r.mmTotal, costDev:costDev, costBiz:r.costBiz, costTotal:r.costTotal, costGI:costDev+r.costBiz, costBreakdown:breakdownMap?(breakdownMap[r.date]||{labor:0,marketing:0,outsourcing:0,depreciation:0,server:0,other:0}):null };
             });
             saveData[name] = { kickoff:kickoff, current:current, launch:launch, rows:filtered };
@@ -439,6 +569,35 @@ document.addEventListener('DOMContentLoaded', function() {
         return { data: saveData, warnings: warnings };
     }
 
+    // ── GitHub 업로드 버튼 ──
+    document.getElementById('uploadBtn').addEventListener('click', function() {
+        var result = collectSelectedData();
+        lastSaveData = result.data;
+        var jsonStr = JSON.stringify(lastSaveData, null, 2);
+        var now = new Date();
+        var commitMsg = 'Update projects.json (' + now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2) + '-' + ('0'+now.getDate()).slice(-2) + ')';
+        var progressEl = document.getElementById('upload-progress');
+        var barEl = document.getElementById('upload-bar');
+        var progressText = document.getElementById('upload-progress-text');
+        progressEl.style.display = 'block';
+        barEl.style.width = '0%';
+        progressText.textContent = 'projects.json 업로드 중...';
+        document.getElementById('save-msg').innerHTML = '';
+        uploadToGitHub('data/projects.json', jsonStr, commitMsg, function(pct) {
+            barEl.style.width = pct + '%';
+        }).then(function() {
+            var cnt = Object.keys(lastSaveData).length;
+            var msgHtml = '<div class="msg msg-success">✅ projects.json GitHub 업로드 완료! (' + cnt + '개 프로젝트) — 약 1분 후 노션 차트에 자동 반영됩니다.</div>';
+            if (result.warnings.length > 0) msgHtml += '<div class="msg msg-error" style="margin-top:8px;">' + result.warnings.join('<br>') + '</div>';
+            document.getElementById('save-msg').innerHTML = msgHtml;
+            progressEl.style.display = 'none';
+        }).catch(function(err) {
+            document.getElementById('save-msg').innerHTML = '<div class="msg msg-error">❌ 업로드 실패: ' + err.message + '</div>';
+            progressEl.style.display = 'none';
+        });
+    });
+
+    // ── 다운로드 버튼 (기존 유지) ──
     document.getElementById('downloadBtn').addEventListener('click', function() {
         var result = collectSelectedData();
         lastSaveData = result.data;
@@ -449,355 +608,181 @@ document.addEventListener('DOMContentLoaded', function() {
         a.href=url; a.download='projects.json';
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
         var sizeKB=(blob.size/1024).toFixed(1), cnt=Object.keys(lastSaveData).length;
-        var msgHtml = '<div class="msg msg-success">✅ projects.json 다운로드 완료 ('+cnt+'개 프로젝트, '+sizeKB+' KB)</div>'
-            + '<div class="msg msg-warn" style="margin-top:8px;">📌 다운로드한 파일을 GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
-        if (result.warnings.length > 0) msgHtml += '<div class="msg msg-error" style="margin-top:8px;">'+result.warnings.join('<br>')+'</div>';
-        document.getElementById('save-msg').innerHTML = msgHtml;
+        document.getElementById('save-msg').innerHTML = '<div class="msg msg-success">✅ projects.json 다운로드 완료 (' + cnt + '개 프로젝트, ' + sizeKB + ' KB)</div><div class="msg msg-warn" style="margin-top:8px;">📌 다운로드한 파일을 GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
     });
 
     document.getElementById('generateUrlBtn').addEventListener('click', function() {
         var baseUrl = getBaseUrl();
-        if (!baseUrl) { alert('GitHub 계정명과 레포명을 모두 입력해 주세요.'); return; }
+        if (!baseUrl) { alert('배포 URL을 입력해 주세요.'); return; }
         var result = collectSelectedData();
         var data = result.data, names = Object.keys(data);
-        var urlHTML = '<h3 style="margin-top:20px; margin-bottom:12px;">📋 노션 임베드용 URL ('+names.length+'개)</h3>';
+        var urlHTML = '<h3 style="margin-top:20px;margin-bottom:12px;">📋 노션 임베드용 URL (' + names.length + '개)</h3>';
         names.forEach(function(name) {
             var enc=encodeURIComponent(name);
             var urls = [
-                ['표',        baseUrl+'/view.html?project='+enc+'&type=table'],
-                ['MM',        baseUrl+'/view.html?project='+enc+'&type=chart'],
-                ['비용',      baseUrl+'/view.html?project='+enc+'&type=cost'],
-                ['막대',      baseUrl+'/view.html?project='+enc+'&type=bar'],
-                ['파이(기준)',baseUrl+'/view.html?project='+enc+'&type=pie'],
-                ['파이(전달)',baseUrl+'/view.html?project='+enc+'&type=pie&month=prev'],
-                ['대시보드',  baseUrl+'/view.html?project='+enc+'&type=dashboard'],
-                ['도넛',       baseUrl+'/view.html?project='+enc+'&type=donut'],
+                ['표', baseUrl+'/view.html?project='+enc+'&type=table'],
+                ['MM', baseUrl+'/view.html?project='+enc+'&type=chart'],
+                ['비용', baseUrl+'/view.html?project='+enc+'&type=cost'],
+                ['막대', baseUrl+'/view.html?project='+enc+'&type=bar'],
+                ['파이(기준)', baseUrl+'/view.html?project='+enc+'&type=pie'],
+                ['파이(전달)', baseUrl+'/view.html?project='+enc+'&type=pie&month=prev'],
+                ['대시보드', baseUrl+'/view.html?project='+enc+'&type=dashboard'],
+                ['도넛', baseUrl+'/view.html?project='+enc+'&type=donut'],
                 ['도넛(기간)', baseUrl+'/view.html?project='+enc+'&type=donut&sub=period'],
                 ['도넛(비용)', baseUrl+'/view.html?project='+enc+'&type=donut&sub=cost'],
-                ['도넛(MM)',   baseUrl+'/view.html?project='+enc+'&type=donut&sub=mm']
+                ['도넛(MM)', baseUrl+'/view.html?project='+enc+'&type=donut&sub=mm']
             ];
-            urlHTML += '<div class="url-group"><h4>📌 '+name+'</h4>';
-            urls.forEach(function(u) {
-                urlHTML += '<div class="url-row"><span style="font-size:12px;color:#888;min-width:55px;">'+u[0]+'</span><code>'+u[1]+'</code><button class="copy-btn" data-url="'+u[1]+'">복사</button></div>';
-            });
+            urlHTML += '<div class="url-group"><h4>📌 ' + name + '</h4>';
+            urls.forEach(function(u) { urlHTML += '<div class="url-row"><span style="font-size:12px;color:#888;min-width:55px;">'+u[0]+'</span><code>'+u[1]+'</code><button class="copy-btn" data-url="'+u[1]+'">복사</button></div>'; });
             urlHTML += '</div>';
         });
         document.getElementById('url-output').innerHTML = urlHTML;
         document.querySelectorAll('.copy-btn').forEach(function(btn) {
             btn.addEventListener('click', function() {
                 var self=this;
-                navigator.clipboard.writeText(self.getAttribute('data-url')).then(function() {
-                    self.textContent='✓ 복사됨'; setTimeout(function(){self.textContent='복사';},1500);
-                });
+                navigator.clipboard.writeText(self.getAttribute('data-url')).then(function() { self.textContent='✓ 복사됨'; setTimeout(function(){self.textContent='복사';},1500); });
             });
         });
     });
 
-    // ──────────────────────────────────────────
-    // STEP 4: 차트 설정 & 미리보기
-    // ──────────────────────────────────────────
+    // ══════════════════════════════════
+    // STEP 4: 차트 설정 (기존과 동일)
+    // ══════════════════════════════════
     var DEFAULT_SETTINGS = {
-        series: {
-            mmDev:            { color: '#3780bf', opacity: 0.6 },
-            mmBiz:            { color: '#db4052', opacity: 0.6 },
-            costDev:          { color: '#3780bf', opacity: 0.6 },
-            costBiz:          { color: '#db4052', opacity: 0.6 },
-            bar_labor:        { color: '#3780bf', opacity: 1.0 },
-            bar_marketing:    { color: '#f39c12', opacity: 1.0 },
-            bar_outsourcing:  { color: '#27ae60', opacity: 1.0 },
-            bar_depreciation: { color: '#8e44ad', opacity: 1.0 },
-            bar_server:       { color: '#16a085', opacity: 1.0 },
-            bar_other:        { color: '#7f8c8d', opacity: 1.0 },
-            donut_period:     { color: '#3780bf', opacity: 0.85 },
-            donut_cost:       { color: '#27ae60', opacity: 0.85 },
-            donut_mm:         { color: '#e67e22', opacity: 0.85 },
-            donut_remain:     { color: '#e0e0e0', opacity: 1.0  }
-        },
-        axes: {
-            chart_y_auto: true, chart_y_max: '', chart_y_step: '',
-            cost_y_auto:  true, cost_y_max:  '', cost_y_step:  '',
-            bar_y_auto:   true, bar_y_max:   '', bar_y_step:   '',
-            x_format: 'YYYY-MM'
-        },
-        donut_text: { pct_color: '#2d3748', pct_size: 32, label_color: '#718096', label_size: 15 }
+        series: { mmDev:{color:'#3780bf',opacity:0.6}, mmBiz:{color:'#db4052',opacity:0.6}, costDev:{color:'#3780bf',opacity:0.6}, costBiz:{color:'#db4052',opacity:0.6}, bar_labor:{color:'#3780bf',opacity:1.0}, bar_marketing:{color:'#f39c12',opacity:1.0}, bar_outsourcing:{color:'#27ae60',opacity:1.0}, bar_depreciation:{color:'#8e44ad',opacity:1.0}, bar_server:{color:'#16a085',opacity:1.0}, bar_other:{color:'#7f8c8d',opacity:1.0}, donut_period:{color:'#3780bf',opacity:0.85}, donut_cost:{color:'#27ae60',opacity:0.85}, donut_mm:{color:'#e67e22',opacity:0.85}, donut_remain:{color:'#e0e0e0',opacity:1.0} },
+        axes: { chart_y_auto:true, chart_y_max:'', chart_y_step:'', cost_y_auto:true, cost_y_max:'', cost_y_step:'', bar_y_auto:true, bar_y_max:'', bar_y_step:'', x_format:'YYYY-MM' },
+        donut_text: { pct_color:'#2d3748', pct_size:32, label_color:'#718096', label_size:15 }
     };
     var currentSettings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
-
     var SERIES_DEFS = [
-        { group: 'MM 차트' },
-        { key: 'mmDev',            label: '개발 MM'     },
-        { key: 'mmBiz',            label: '사업 MM'     },
-        { group: '누적 개발비 차트' },
-        { key: 'costDev',          label: '개발비'      },
-        { key: 'costBiz',          label: '사업비'      },
-        { group: '막대 / 파이 차트' },
-        { key: 'bar_labor',        label: '인건비'      },
-        { key: 'bar_marketing',    label: '마케팅비'    },
-        { key: 'bar_outsourcing',  label: '외주비'      },
-        { key: 'bar_depreciation', label: '감가상각비'  },
-        { key: 'bar_server',       label: '서버비'      },
-        { key: 'bar_other',        label: '기타 운영비' },
-        { group: '도넛 소진율 차트' },
-        { key: 'donut_period', label: '기간 소진율' },
-        { key: 'donut_cost',   label: '비용 소진율' },
-        { key: 'donut_mm',     label: 'MM 소진율'   },
-        { key: 'donut_remain', label: '잔여(회색)'  }
+        {group:'MM 차트'}, {key:'mmDev',label:'개발 MM'}, {key:'mmBiz',label:'사업 MM'},
+        {group:'누적 개발비 차트'}, {key:'costDev',label:'개발비'}, {key:'costBiz',label:'사업비'},
+        {group:'막대 / 파이 차트'}, {key:'bar_labor',label:'인건비'}, {key:'bar_marketing',label:'마케팅비'}, {key:'bar_outsourcing',label:'외주비'}, {key:'bar_depreciation',label:'감가상각비'}, {key:'bar_server',label:'서버비'}, {key:'bar_other',label:'기타 운영비'},
+        {group:'도넛 소진율 차트'}, {key:'donut_period',label:'기간 소진율'}, {key:'donut_cost',label:'비용 소진율'}, {key:'donut_mm',label:'MM 소진율'}, {key:'donut_remain',label:'잔여(회색)'}
     ];
-
     function renderSeriesTable() {
-        var tbody = document.querySelector('#series-table tbody');
-        var html = '';
+        var tbody = document.querySelector('#series-table tbody'), html = '';
         SERIES_DEFS.forEach(function(def) {
-            if (def.group) {
-                html += '<tr class="group-hd"><td colspan="4">' + def.group + '</td></tr>';
-            } else {
-                var s = currentSettings.series[def.key];
-                html += '<tr>'
-                    + '<td>' + def.label + '</td>'
-                    + '<td><input type="color" class="s-color" data-key="' + def.key + '" value="' + s.color + '"></td>'
-                    + '<td><input type="range" class="op-slider" data-key="' + def.key + '" min="0" max="1" step="0.05" value="' + s.opacity + '"></td>'
-                    + '<td><span class="oval" id="oval-' + def.key + '">' + s.opacity.toFixed(2) + '</span></td>'
-                    + '</tr>';
-            }
+            if (def.group) { html += '<tr class="group-hd"><td colspan="4">' + def.group + '</td></tr>'; return; }
+            var s = currentSettings.series[def.key];
+            html += '<tr><td>' + def.label + '</td><td><input type="color" class="s-color" data-key="' + def.key + '" value="' + s.color + '"></td><td><input type="range" class="op-slider" data-key="' + def.key + '" min="0" max="1" step="0.05" value="' + s.opacity + '"></td><td><span class="oval" id="oval-' + def.key + '">' + s.opacity.toFixed(2) + '</span></td></tr>';
         });
         tbody.innerHTML = html;
-        tbody.querySelectorAll('.s-color').forEach(function(el) {
-            el.addEventListener('input', function() {
-                currentSettings.series[this.dataset.key].color = this.value;
-                renderPreview();
-            });
-        });
-        tbody.querySelectorAll('.op-slider').forEach(function(el) {
-            el.addEventListener('input', function() {
-                var v = parseFloat(this.value);
-                currentSettings.series[this.dataset.key].opacity = v;
-                document.getElementById('oval-' + this.dataset.key).textContent = v.toFixed(2);
-                renderPreview();
-            });
-        });
+        tbody.querySelectorAll('.s-color').forEach(function(el) { el.addEventListener('input', function() { currentSettings.series[this.dataset.key].color = this.value; renderPreview(); }); });
+        tbody.querySelectorAll('.op-slider').forEach(function(el) { el.addEventListener('input', function() { var v=parseFloat(this.value); currentSettings.series[this.dataset.key].opacity=v; document.getElementById('oval-'+this.dataset.key).textContent=v.toFixed(2); renderPreview(); }); });
     }
-
     function renderAxisSettings() {
         var container = document.getElementById('axis-settings');
-        var axes = [
-            { prefix: 'chart', label: 'MM 차트 Y축' },
-            { prefix: 'cost',  label: '누적 개발비 Y축' },
-            { prefix: 'bar',   label: '막대 차트 Y축' }
-        ];
+        var axes = [{prefix:'chart',label:'MM 차트 Y축'},{prefix:'cost',label:'누적 개발비 Y축'},{prefix:'bar',label:'막대 차트 Y축'}];
         var html = '';
         axes.forEach(function(a) {
-            var ax = currentSettings.axes;
-            var isAuto = ax[a.prefix + '_y_auto'];
-            html += '<div class="axis-block">'
-                + '<div class="axis-block-title">' + a.label + '</div>'
-                + '<div class="axis-row2"><label><input type="checkbox" class="ax-auto" data-prefix="' + a.prefix + '" ' + (isAuto ? 'checked' : '') + '> 자동 범위</label></div>'
-                + '<div class="ax-manual" id="ax-man-' + a.prefix + '" style="' + (isAuto ? 'display:none;' : '') + '">'
-                + '<div class="axis-row2"><label>최댓값</label><input type="number" class="ax-max" data-prefix="' + a.prefix + '" value="' + ax[a.prefix+'_y_max'] + '" placeholder="자동"></div>'
-                + '<div class="axis-row2"><label>스텝</label><input type="number" class="ax-step" data-prefix="' + a.prefix + '" value="' + ax[a.prefix+'_y_step'] + '" placeholder="자동"></div>'
-                + '</div></div>';
+            var ax=currentSettings.axes, isAuto=ax[a.prefix+'_y_auto'];
+            html += '<div class="axis-block"><div class="axis-block-title">'+a.label+'</div><div class="axis-row2"><label><input type="checkbox" class="ax-auto" data-prefix="'+a.prefix+'" '+(isAuto?'checked':'')+'> 자동 범위</label></div><div class="ax-manual" id="ax-man-'+a.prefix+'" style="'+(isAuto?'display:none;':'')+'"><div class="axis-row2"><label>최댓값</label><input type="number" class="ax-max" data-prefix="'+a.prefix+'" value="'+ax[a.prefix+'_y_max']+'" placeholder="자동"></div><div class="axis-row2"><label>스텝</label><input type="number" class="ax-step" data-prefix="'+a.prefix+'" value="'+ax[a.prefix+'_y_step']+'" placeholder="자동"></div></div></div>';
         });
         container.innerHTML = html;
-        container.querySelectorAll('.ax-auto').forEach(function(el) {
-            el.addEventListener('change', function() {
-                currentSettings.axes[this.dataset.prefix + '_y_auto'] = this.checked;
-                document.getElementById('ax-man-' + this.dataset.prefix).style.display = this.checked ? 'none' : '';
-                renderPreview();
-            });
-        });
-        container.querySelectorAll('.ax-max').forEach(function(el) {
-            el.addEventListener('input', function() { currentSettings.axes[this.dataset.prefix + '_y_max'] = this.value; renderPreview(); });
-        });
-        container.querySelectorAll('.ax-step').forEach(function(el) {
-            el.addEventListener('input', function() { currentSettings.axes[this.dataset.prefix + '_y_step'] = this.value; renderPreview(); });
-        });
+        container.querySelectorAll('.ax-auto').forEach(function(el) { el.addEventListener('change', function() { currentSettings.axes[this.dataset.prefix+'_y_auto']=this.checked; document.getElementById('ax-man-'+this.dataset.prefix).style.display=this.checked?'none':''; renderPreview(); }); });
+        container.querySelectorAll('.ax-max').forEach(function(el) { el.addEventListener('input', function() { currentSettings.axes[this.dataset.prefix+'_y_max']=this.value; renderPreview(); }); });
+        container.querySelectorAll('.ax-step').forEach(function(el) { el.addEventListener('input', function() { currentSettings.axes[this.dataset.prefix+'_y_step']=this.value; renderPreview(); }); });
     }
-
     function renderXFmt() {
         var container = document.getElementById('xfmt-row');
-        var formats = ['YYYY-MM', 'YY.MM', 'YY년MM월'];
-        container.innerHTML = formats.map(function(f) {
-            return '<label><input type="radio" name="xformat" value="' + f + '" ' + (currentSettings.axes.x_format === f ? 'checked' : '') + '> ' + f + '</label>';
-        }).join('');
-        container.querySelectorAll('input[name="xformat"]').forEach(function(el) {
-            el.addEventListener('change', function() { currentSettings.axes.x_format = this.value; });
-        });
+        container.innerHTML = ['YYYY-MM','YY.MM','YY년MM월'].map(function(f) { return '<label><input type="radio" name="xformat" value="'+f+'" '+(currentSettings.axes.x_format===f?'checked':'')+'>'+f+'</label>'; }).join('');
+        container.querySelectorAll('input[name="xformat"]').forEach(function(el) { el.addEventListener('change', function() { currentSettings.axes.x_format=this.value; }); });
     }
-
-    // ── Chart.js 미리보기 ──
-    function h2r(hex) {
-        hex = hex.replace('#','');
-        if (hex.length===3) hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
-        return { r:parseInt(hex.slice(0,2),16), g:parseInt(hex.slice(2,4),16), b:parseInt(hex.slice(4,6),16) };
-    }
-    function toRgba(hex, opacity) { var c=h2r(hex); return 'rgba('+c.r+','+c.g+','+c.b+','+opacity+')'; }
+    function h2r(hex) { hex=hex.replace('#',''); if(hex.length===3)hex=hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2]; return {r:parseInt(hex.slice(0,2),16),g:parseInt(hex.slice(2,4),16),b:parseInt(hex.slice(4,6),16)}; }
+    function toRgba(hex,op) { var c=h2r(hex); return 'rgba('+c.r+','+c.g+','+c.b+','+op+')'; }
     function toRgbStr(hex) { var c=h2r(hex); return 'rgb('+c.r+','+c.g+','+c.b+')'; }
-
-    var SLABELS = ['2024-01','2024-02','2024-03','2024-04','2024-05','2024-06','2024-07','2024-08'];
-    var SD1 = [5,8,12,10,14,11,9,13], SD2 = [2,3,4,3,5,4,3,4];
-    var SBAR = [[800,900,950,1000,1050,980,1020,1100],[200,250,200,300,250,200,280,300],[100,120,110,130,100,90,120,110],[50,60,50,60,55,50,60,65],[80,90,85,95,90,80,90,100],[50,40,60,50,55,60,45,55]];
-    var SPIE = [1100,300,110,60,90,55];
-    var BAR_KEYS  = ['bar_labor','bar_marketing','bar_outsourcing','bar_depreciation','bar_server','bar_other'];
-    var BAR_NAMES = ['인건비','마케팅비','외주비','감가상각비','서버비','기타 운영비'];
-    var previewInst = null, previewType = 'mm';
-
+    var SLABELS=['2024-01','2024-02','2024-03','2024-04','2024-05','2024-06','2024-07','2024-08'];
+    var SD1=[5,8,12,10,14,11,9,13], SD2=[2,3,4,3,5,4,3,4];
+    var SBAR=[[800,900,950,1000,1050,980,1020,1100],[200,250,200,300,250,200,280,300],[100,120,110,130,100,90,120,110],[50,60,50,60,55,50,60,65],[80,90,85,95,90,80,90,100],[50,40,60,50,55,60,45,55]];
+    var SPIE=[1100,300,110,60,90,55];
+    var BAR_KEYS=['bar_labor','bar_marketing','bar_outsourcing','bar_depreciation','bar_server','bar_other'];
+    var BAR_NAMES=['인건비','마케팅비','외주비','감가상각비','서버비','기타 운영비'];
+    var previewInst=null, previewType='mm';
     function renderPreview() {
-        var canvas = document.getElementById('previewChart');
-        if (!canvas) return;
-        if (previewInst) { previewInst.destroy(); previewInst = null; }
-        var ctx = canvas.getContext('2d');
-        var s = currentSettings.series, ax = currentSettings.axes;
-        if (previewType === 'mm' || previewType === 'cost') {
-            var k1 = previewType==='mm' ? 'mmDev' : 'costDev';
-            var k2 = previewType==='mm' ? 'mmBiz' : 'costBiz';
-            var l1 = previewType==='mm' ? '개발 MM' : '개발비';
-            var l2 = previewType==='mm' ? '사업 MM' : '사업비';
-            var pfx = previewType==='mm' ? 'chart' : 'cost';
-            var yOpts = { beginAtZero: true };
-            if (!ax[pfx+'_y_auto'] && ax[pfx+'_y_max']) yOpts.max = parseFloat(ax[pfx+'_y_max']);
-            if (!ax[pfx+'_y_auto'] && ax[pfx+'_y_step']) yOpts.ticks = { stepSize: parseFloat(ax[pfx+'_y_step']) };
-            previewInst = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: SLABELS,
-                    datasets: [
-                        { label: l1, data: SD1.map(function(v,i){return v+SD2[i];}), backgroundColor: toRgba(s[k1].color, s[k1].opacity), borderColor: toRgbStr(s[k1].color), fill: true, tension: 0.1 },
-                        { label: l2, data: SD2, backgroundColor: toRgba(s[k2].color, s[k2].opacity), borderColor: toRgbStr(s[k2].color), fill: true, tension: 0.1 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: yOpts, x: { ticks: { maxRotation: 45 } } } }
-            });
-        } else if (previewType === 'bar') {
-            var byOpts = { stacked: true, beginAtZero: true };
-            if (!ax.bar_y_auto && ax.bar_y_max) byOpts.max = parseFloat(ax.bar_y_max);
-            if (!ax.bar_y_auto && ax.bar_y_step) byOpts.ticks = { stepSize: parseFloat(ax.bar_y_step) };
-            previewInst = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: SLABELS,
-                    datasets: BAR_KEYS.map(function(k,i) {
-                        return { label: BAR_NAMES[i], data: SBAR[i], backgroundColor: toRgba(s[k].color, s[k].opacity), borderColor: toRgbStr(s[k].color), borderWidth: 0 };
-                    })
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { x: { stacked: true }, y: byOpts } }
-            });
-        } else if (previewType === 'pie') {
-            previewInst = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: BAR_NAMES,
-                    datasets: [{ data: SPIE, backgroundColor: BAR_KEYS.map(function(k){ return toRgba(s[k].color, s[k].opacity); }), borderColor: BAR_KEYS.map(function(k){ return toRgbStr(s[k].color); }), borderWidth: 1 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-            });
-        } else if (previewType === 'donut') {
-            var dt = currentSettings.donut_text || {};
-            var sampleRatio = 0.747;
-            var centerPlugin = {
-                id: 'donutCenter',
-                afterDraw: function(chart) {
-                    var ctx2=chart.ctx, w=chart.width, h=chart.height, cx=w/2, cy=h/2;
-                    ctx2.save();
-                    ctx2.textAlign='center'; ctx2.textBaseline='middle';
-                    ctx2.fillStyle=dt.pct_color||'#2d3748';
-                    ctx2.font='bold '+(dt.pct_size||32)+'px sans-serif';
-                    ctx2.fillText((sampleRatio*100).toFixed(1)+'%', cx, cy-10);
-                    ctx2.fillStyle=dt.label_color||'#718096';
-                    ctx2.font=(dt.label_size||15)+'px sans-serif';
-                    ctx2.fillText('소진', cx, cy+(dt.pct_size||32)*0.7);
-                    ctx2.restore();
-                }
-            };
-            previewInst = new Chart(ctx, {
-                type: 'doughnut',
-                plugins: [centerPlugin],
-                data: {
-                    datasets: [{ data: [sampleRatio, 1-sampleRatio], backgroundColor: [toRgba(s['donut_period'].color, s['donut_period'].opacity), toRgba(s['donut_remain'].color, s['donut_remain'].opacity)], borderWidth: 0 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false, cutout: '65%', rotation: -90, plugins: { legend: { display: false }, tooltip: { enabled: false } } }
-            });
+        var canvas=document.getElementById('previewChart'); if(!canvas) return;
+        if(previewInst){previewInst.destroy();previewInst=null;}
+        var ctx=canvas.getContext('2d'), s=currentSettings.series, ax=currentSettings.axes;
+        if(previewType==='mm'||previewType==='cost') {
+            var k1=previewType==='mm'?'mmDev':'costDev', k2=previewType==='mm'?'mmBiz':'costBiz';
+            var l1=previewType==='mm'?'개발 MM':'개발비', l2=previewType==='mm'?'사업 MM':'사업비';
+            var pfx=previewType==='mm'?'chart':'cost';
+            var yOpts={beginAtZero:true};
+            if(!ax[pfx+'_y_auto']&&ax[pfx+'_y_max'])yOpts.max=parseFloat(ax[pfx+'_y_max']);
+            if(!ax[pfx+'_y_auto']&&ax[pfx+'_y_step'])yOpts.ticks={stepSize:parseFloat(ax[pfx+'_y_step'])};
+            previewInst=new Chart(ctx,{type:'line',data:{labels:SLABELS,datasets:[{label:l1,data:SD1.map(function(v,i){return v+SD2[i];}),backgroundColor:toRgba(s[k1].color,s[k1].opacity),borderColor:toRgbStr(s[k1].color),fill:true,tension:0.1},{label:l2,data:SD2,backgroundColor:toRgba(s[k2].color,s[k2].opacity),borderColor:toRgbStr(s[k2].color),fill:true,tension:0.1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{y:yOpts,x:{ticks:{maxRotation:45}}}}});
+        } else if(previewType==='bar') {
+            var byOpts={stacked:true,beginAtZero:true};
+            if(!ax.bar_y_auto&&ax.bar_y_max)byOpts.max=parseFloat(ax.bar_y_max);
+            if(!ax.bar_y_auto&&ax.bar_y_step)byOpts.ticks={stepSize:parseFloat(ax.bar_y_step)};
+            previewInst=new Chart(ctx,{type:'bar',data:{labels:SLABELS,datasets:BAR_KEYS.map(function(k,i){return{label:BAR_NAMES[i],data:SBAR[i],backgroundColor:toRgba(s[k].color,s[k].opacity),borderColor:toRgbStr(s[k].color),borderWidth:0};})},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}},scales:{x:{stacked:true},y:byOpts}}});
+        } else if(previewType==='pie') {
+            previewInst=new Chart(ctx,{type:'pie',data:{labels:BAR_NAMES,datasets:[{data:SPIE,backgroundColor:BAR_KEYS.map(function(k){return toRgba(s[k].color,s[k].opacity);}),borderColor:BAR_KEYS.map(function(k){return toRgbStr(s[k].color);}),borderWidth:1}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+        } else if(previewType==='donut') {
+            var dt=currentSettings.donut_text||{}, sampleRatio=0.747;
+            var cp={id:'donutCenter',afterDraw:function(chart){var ctx2=chart.ctx,w=chart.width,h=chart.height,cx=w/2,cy=h/2;ctx2.save();ctx2.textAlign='center';ctx2.textBaseline='middle';ctx2.fillStyle=dt.pct_color||'#2d3748';ctx2.font='bold '+(dt.pct_size||32)+'px sans-serif';ctx2.fillText((sampleRatio*100).toFixed(1)+'%',cx,cy-10);ctx2.fillStyle=dt.label_color||'#718096';ctx2.font=(dt.label_size||15)+'px sans-serif';ctx2.fillText('소진',cx,cy+(dt.pct_size||32)*0.7);ctx2.restore();}};
+            previewInst=new Chart(ctx,{type:'doughnut',plugins:[cp],data:{datasets:[{data:[sampleRatio,1-sampleRatio],backgroundColor:[toRgba(s['donut_period'].color,s['donut_period'].opacity),toRgba(s['donut_remain'].color,s['donut_remain'].opacity)],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',rotation:-90,plugins:{legend:{display:false},tooltip:{enabled:false}}}});
         }
     }
-
     function renderDonutText() {
-        var dt = currentSettings.donut_text || {};
-        var container = document.getElementById('donut-text-settings');
-        if (!container) return;
-        container.innerHTML =
-            '<div class="axis-row2" style="margin-bottom:6px;">'
-            + '<label style="min-width:70px;">% 색상</label><input type="color" id="dt-pct-color" value="'+(dt.pct_color||'#2d3748')+'">'
-            + '<label style="margin-left:8px;">크기</label><input type="number" id="dt-pct-size" value="'+(dt.pct_size||32)+'" style="width:60px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;">'
-            + '</div>'
-            + '<div class="axis-row2">'
-            + '<label style="min-width:70px;">소진 색상</label><input type="color" id="dt-lbl-color" value="'+(dt.label_color||'#718096')+'">'
-            + '<label style="margin-left:8px;">크기</label><input type="number" id="dt-lbl-size" value="'+(dt.label_size||15)+'" style="width:60px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;">'
-            + '</div>';
-        document.getElementById('dt-pct-color').addEventListener('input', function() { currentSettings.donut_text.pct_color = this.value; renderPreview(); });
-        document.getElementById('dt-pct-size').addEventListener('input', function() { currentSettings.donut_text.pct_size = parseInt(this.value)||32; renderPreview(); });
-        document.getElementById('dt-lbl-color').addEventListener('input', function() { currentSettings.donut_text.label_color = this.value; renderPreview(); });
-        document.getElementById('dt-lbl-size').addEventListener('input', function() { currentSettings.donut_text.label_size = parseInt(this.value)||15; renderPreview(); });
+        var dt=currentSettings.donut_text||{}, container=document.getElementById('donut-text-settings');
+        if(!container) return;
+        container.innerHTML='<div class="axis-row2" style="margin-bottom:6px;"><label style="min-width:70px;">% 색상</label><input type="color" id="dt-pct-color" value="'+(dt.pct_color||'#2d3748')+'"><label style="margin-left:8px;">크기</label><input type="number" id="dt-pct-size" value="'+(dt.pct_size||32)+'" style="width:60px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;"></div><div class="axis-row2"><label style="min-width:70px;">소진 색상</label><input type="color" id="dt-lbl-color" value="'+(dt.label_color||'#718096')+'"><label style="margin-left:8px;">크기</label><input type="number" id="dt-lbl-size" value="'+(dt.label_size||15)+'" style="width:60px;font-size:12px;padding:3px 6px;border:1px solid #ccc;border-radius:3px;"></div>';
+        document.getElementById('dt-pct-color').addEventListener('input',function(){currentSettings.donut_text.pct_color=this.value;renderPreview();});
+        document.getElementById('dt-pct-size').addEventListener('input',function(){currentSettings.donut_text.pct_size=parseInt(this.value)||32;renderPreview();});
+        document.getElementById('dt-lbl-color').addEventListener('input',function(){currentSettings.donut_text.label_color=this.value;renderPreview();});
+        document.getElementById('dt-lbl-size').addEventListener('input',function(){currentSettings.donut_text.label_size=parseInt(this.value)||15;renderPreview();});
     }
-    renderSeriesTable();
-    renderAxisSettings();
-    renderXFmt();
-    renderDonutText();
-    renderPreview();
-
+    renderSeriesTable(); renderAxisSettings(); renderXFmt(); renderDonutText(); renderPreview();
     document.querySelectorAll('.preview-tab').forEach(function(tab) {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('.preview-tab').forEach(function(t){ t.classList.remove('active'); });
-            this.classList.add('active');
-            previewType = this.dataset.type;
-            renderPreview();
-        });
+        tab.addEventListener('click', function() { document.querySelectorAll('.preview-tab').forEach(function(t){t.classList.remove('active');}); this.classList.add('active'); previewType=this.dataset.type; renderPreview(); });
     });
 
-    // ── settings.json 불러오기 ──
+    // settings.json 불러오기
     document.getElementById('importSettingsInput').addEventListener('change', function() {
-        var file = this.files[0];
-        if (!file) return;
-        var self = this;
-        var reader = new FileReader();
-        reader.onload = function(e) {
+        var file=this.files[0]; if(!file) return;
+        var self=this, reader=new FileReader();
+        reader.onload=function(e) {
             try {
-                var imported = JSON.parse(e.target.result);
-                if (!imported.series)     imported.series     = {};
-                if (!imported.axes)       imported.axes       = {};
-                if (!imported.donut_text) imported.donut_text = {};
-                Object.keys(DEFAULT_SETTINGS.series).forEach(function(k) {
-                    if (!imported.series[k]) imported.series[k] = JSON.parse(JSON.stringify(DEFAULT_SETTINGS.series[k]));
-                });
-                Object.keys(DEFAULT_SETTINGS.axes).forEach(function(k) {
-                    if (imported.axes[k] === undefined) imported.axes[k] = DEFAULT_SETTINGS.axes[k];
-                });
-                Object.keys(DEFAULT_SETTINGS.donut_text).forEach(function(k) {
-                    if (imported.donut_text[k] === undefined) imported.donut_text[k] = DEFAULT_SETTINGS.donut_text[k];
-                });
-                currentSettings = imported;
-                renderSeriesTable();
-                renderAxisSettings();
-                renderXFmt();
-                renderDonutText();
-                renderPreview();
-                var st = document.getElementById('import-settings-status');
-                st.textContent = '✅ ' + file.name + ' 불러오기 완료';
-                st.style.color = '#155724';
+                var imported=JSON.parse(e.target.result);
+                if(!imported.series)imported.series={};
+                if(!imported.axes)imported.axes={};
+                if(!imported.donut_text)imported.donut_text={};
+                Object.keys(DEFAULT_SETTINGS.series).forEach(function(k){if(!imported.series[k])imported.series[k]=JSON.parse(JSON.stringify(DEFAULT_SETTINGS.series[k]));});
+                Object.keys(DEFAULT_SETTINGS.axes).forEach(function(k){if(imported.axes[k]===undefined)imported.axes[k]=DEFAULT_SETTINGS.axes[k];});
+                Object.keys(DEFAULT_SETTINGS.donut_text).forEach(function(k){if(imported.donut_text[k]===undefined)imported.donut_text[k]=DEFAULT_SETTINGS.donut_text[k];});
+                currentSettings=imported;
+                renderSeriesTable(); renderAxisSettings(); renderXFmt(); renderDonutText(); renderPreview();
+                var st=document.getElementById('import-settings-status'); st.textContent='✅ '+file.name+' 불러오기 완료'; st.style.color='#155724';
             } catch(err) {
-                var st = document.getElementById('import-settings-status');
-                st.textContent = '❌ 파일 오류: ' + err.message;
-                st.style.color = '#721c24';
+                var st=document.getElementById('import-settings-status'); st.textContent='❌ 파일 오류: '+err.message; st.style.color='#721c24';
             }
-            self.value = '';
+            self.value='';
         };
         reader.readAsText(file);
     });
-    document.getElementById('downloadSettingsBtn').addEventListener('click', function() {
+
+    // settings.json GitHub 업로드
+    document.getElementById('uploadSettingsBtn').addEventListener('click', function() {
         var jsonStr = JSON.stringify(currentSettings, null, 2);
-        var blob = new Blob([jsonStr], { type: 'application/json' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href=url; a.download='settings.json';
+        var now = new Date();
+        var commitMsg = 'Update settings.json (' + now.getFullYear() + '-' + ('0'+(now.getMonth()+1)).slice(-2) + '-' + ('0'+now.getDate()).slice(-2) + ')';
+        document.getElementById('settings-msg').innerHTML = '<div class="msg msg-info">⏳ settings.json 업로드 중...</div>';
+        uploadToGitHub('data/settings.json', jsonStr, commitMsg, null).then(function() {
+            document.getElementById('settings-msg').innerHTML = '<div class="msg msg-success">✅ settings.json GitHub 업로드 완료! — 약 1분 후 모든 차트에 반영됩니다.</div>';
+        }).catch(function(err) {
+            document.getElementById('settings-msg').innerHTML = '<div class="msg msg-error">❌ 업로드 실패: ' + err.message + '</div>';
+        });
+    });
+
+    // settings.json 다운로드 (기존 유지)
+    document.getElementById('downloadSettingsBtn').addEventListener('click', function() {
+        var jsonStr=JSON.stringify(currentSettings,null,2);
+        var blob=new Blob([jsonStr],{type:'application/json'});
+        var url=URL.createObjectURL(blob);
+        var a=document.createElement('a'); a.href=url; a.download='settings.json';
         document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
-        document.getElementById('settings-msg').innerHTML = '<div class="msg msg-success">✅ settings.json 다운로드 완료 — GitHub 레포의 <strong>data/</strong> 폴더에 넣고 push 해주세요.</div>';
+        document.getElementById('settings-msg').innerHTML='<div class="msg msg-success">✅ settings.json 다운로드 완료</div>';
     });
 
 }); // end DOMContentLoaded
